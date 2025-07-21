@@ -10,9 +10,8 @@ Entry point for the text adventure game.
 # Import game_state to set initial values if needed, and print_slow for intro
 from game_data import game_state, locations, endings
 from utils import print_slow
-# Removed: from game_actions import handle_vision_event
-# Removed: from menus import main_menu_loop
 
+inventory = set()
 
 def show_location():
     loc = game_state["current_location"]
@@ -27,6 +26,7 @@ def show_location():
     for j, action in enumerate(data["interactions"], 1):
         print(f"{exit_count + j}. {action}")
     print(f"{exit_count + len(data['interactions']) + 1}. Exit Game")
+    print(f"Inventory: {', '.join(sorted(inventory)) if inventory else 'empty'}")
 
 
 def choose_action():
@@ -48,6 +48,27 @@ def choose_action():
         action_idx = choice - len(exit_names) - 1
         action = action_names[action_idx]
         print_slow(data["interactions"][action])
+        # Inventory and endings logic
+        if loc == "bedroom" and action == "use computer":
+            if "data" not in inventory:
+                print_slow("You found important data about the missile!")
+                inventory.add("data")
+            else:
+                print_slow("You already have the data.")
+        if loc == "tech_store" and action == "get tech part":
+            if "data" in inventory and "tech part" not in inventory:
+                print_slow("You show your data and receive a tech part!")
+                inventory.add("tech part")
+            elif "tech part" in inventory:
+                print_slow("You already have the tech part.")
+            else:
+                print_slow("You need data before you can get the tech part.")
+        if loc == "military_base" and action == "use tech part":
+            if "tech part" in inventory:
+                game_state["ending"] = "missile_destroyed"
+                return False
+            else:
+                print_slow("You need a tech part to do this!")
         # Minimal endings logic
         if loc == "bus_stop" and action == "wait for bus":
             game_state["ending"] = "escaped"
@@ -57,6 +78,12 @@ def choose_action():
             return False
         if loc == "bedroom" and action == "think":
             game_state["ending"] = "waited"
+            return False
+        if loc == "newspaper_club" and action == "rally friends":
+            game_state["ending"] = "allies_saved"
+            return False
+        if loc == "neighbors_bunker" and action == "hide in bunker":
+            game_state["ending"] = "bunker"
             return False
         return True
     else:
@@ -74,6 +101,7 @@ def game():
     game_state["protagonist_name"] = name
     game_state["current_location"] = "bedroom"
     game_state["ending"] = None
+    inventory.clear()
 
     while True:
         show_location()

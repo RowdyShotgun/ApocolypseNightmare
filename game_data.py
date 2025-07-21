@@ -18,16 +18,7 @@ game_state = {
 
 # --- Character Definitions (for dialogue and interaction) ---
 characters = {
-    "protagonist": {"name": "You", "description": "A weak but smart, brave but shortsighted teenager."},
-    "alex": {"name": "Alex", "description": "Your friend from the newspaper club, always rational."},
-    "maya": {"name": "Maya", "description": "Your friend from the newspaper club, always looking for the good."},
-    "ben": {"name": "Ben", "description": "Your friend from the newspaper club, practical and resourceful."},
-    "jake": {"name": "Jake", "description": "Your childhood friend, tough exterior, troubled home life."},
-    "mr_henderson": {"name": "Mr. Henderson", "description": "An old recluse who owns a beat-up truck."},
-    "mayor": {"name": "Mayor Thompson", "description": "The town's stern and busy mayor."},
-    "secretary": {"name": "Secretary Davies", "description": "The mayor's unimpressed secretary."},
-    "proprietor": {"name": "Mr. Jenkins", "description": "The gruff owner of the general store."},
-    "parents": {"name": "Your Parents", "description": "Your loving but sometimes oblivious parents."}
+    "protagonist": {"name": "You", "description": "A weak but smart, brave but shortsighted teenager."}
 }
 
 # --- Locations and Scenes ---
@@ -39,7 +30,8 @@ locations = {
         ),
         "exits": {"living room": "living_room", "front door": "front_door"},
         "interactions": {
-            "think": "The vision... a nuclear missile. Your city. Gone. You shudder. What do you do?"
+            "think": "The vision... a nuclear missile. Your city. Gone. You shudder. What do you do?",
+            "use computer": "You use your computer to search for information about the missile."
         }
     },
     "living_room": {
@@ -62,8 +54,7 @@ locations = {
             "but you know time is running out."
         ),
         "exits": {"front door": "front_door", "bus station": "bus_stop", "town hall": "town_hall",
-                  "tech store": "tech_store", "military base": "military_base",
-                  "general store": "general_store", "pawn shop": "pawn_shop"},
+                  "tech store": "tech_store", "military base": "military_base"},
         "interactions": {}
     },
     "school_entrance": {
@@ -79,14 +70,9 @@ locations = {
             "Your friends are here."
         ),
         "exits": {"school entrance": "school_entrance"},
-        "interactions": {}
-    },
-    "general_store": {
-        "description": (
-            "The local general store, smelling faintly of dust and old candy. Mr. Jenkins, the proprietor, eyes you suspiciously."
-        ),
-        "exits": {"town square": "town_square"},
-        "interactions": {}
+        "interactions": {
+            "rally friends": "You rally your friends and together you make a plan to escape as a group."
+        }
     },
     "town_hall": {
         "description": (
@@ -99,24 +85,10 @@ locations = {
         "description": (
             "A small, weathered shelter with a faded bus schedule. The road stretches out towards the next town."
         ),
-        "exits": {"town square": "town_square"},
+        "exits": {"outskirts road": "outskirts_road"},
         "interactions": {
             "wait for bus": "You sit on the bench, time ticking by. Waiting feels like a luxury you don't have."
         }
-    },
-    "pawn_shop": {
-        "description": (
-            "A dingy little shop filled with oddities. The owner eyes you suspiciously."
-        ),
-        "exits": {"town square": "town_square"},
-        "interactions": {}
-    },
-    "tech_store": {
-        "description": (
-            "A small, modern storefront with a few outdated computers on display. It's usually empty."
-        ),
-        "exits": {"town square": "town_square"},
-        "interactions": {}
     },
     "outskirts_road": {
         "description": (
@@ -130,14 +102,9 @@ locations = {
             "A heavily reinforced steel door, almost invisible against the overgrown hillside. It looks impenetrable."
         ),
         "exits": {"outskirts road": "outskirts_road"},
-        "interactions": {}
-    },
-    "burger_hut": {
-        "description": (
-            "The greasy smell of frying food assaults your senses. A few bored-looking customers sit at tables."
-        ),
-        "exits": {"town square": "town_square"},
-        "interactions": {}
+        "interactions": {
+            "hide in bunker": "You manage to get inside the bunker and seal the door behind you, safe from the chaos outside."
+        }
     },
     "military_base": {
         "description": (
@@ -146,7 +113,17 @@ locations = {
         ),
         "exits": {"town square": "town_square"},
         "interactions": {
-            "approach gate": "A guard stands at the main gate, rifle slung over his shoulder. He looks bored, but alert."
+            "approach gate": "A guard stands at the main gate, rifle slung over his shoulder. He looks bored, but alert.",
+            "use tech part": "You use the tech part to access the missile controls and destroy the missile!"
+        }
+    },
+    "tech_store": {
+        "description": (
+            "A small, modern storefront with a few outdated computers on display. It's usually empty."
+        ),
+        "exits": {"town square": "town_square"},
+        "interactions": {
+            "get tech part": "You ask for a special tech part, showing your data as proof."
         }
     }
 }
@@ -155,4 +132,7 @@ endings = {
     "escaped": "You managed to escape the town in time. You survive, but the world you knew is gone.",
     "caught": "You were caught by the authorities and failed to escape. The end comes swiftly.",
     "waited": "You waited too long. The disaster struck before you could act. The end.",
+    "allies_saved": "You and your friends escape together, saving each other from disaster. You face the new world as a team.",
+    "bunker": "You hide in the neighbor's bunker and survive the apocalypse, isolated but alive.",
+    "missile_destroyed": "You use your technical skills and a special part to destroy the missile and save the world!",
 }
