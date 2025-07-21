@@ -1,13 +1,11 @@
 """
 main.py
 
-Entry point for the text adventure game.
+Entry point for ApocalypseNightmare.
 - Greets the player and prompts for their name.
 - Sets up the initial game state and starts the main menu loop.
 - Handles game restart logic.
 """
-# main.py
-# Import game_state to set initial values if needed, and print_slow for intro
 from game_data import game_state, locations, endings
 from utils import print_slow
 
@@ -92,7 +90,7 @@ def choose_action():
 
 
 def game():
-    print_slow("Welcome to 'End of the World: A Text Adventure'!")
+    print_slow("Welcome to ApocalypseNightmare!")
     input("Press Enter to begin...")
     name = input("What is your name? (Press Enter for default) ").strip()
     if not name:
