@@ -12,6 +12,7 @@ from menus import main_menu_loop
 
 
 def game():
+
     print_slow("Welcome to 'End of the World: A Text Adventure'!", mode='slow')
     print_slow("Press Enter to begin...", mode='slow')
     input()
@@ -24,3 +25,4 @@ def game():
 
 if __name__ == "__main__":
     game()
+    

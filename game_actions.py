@@ -142,6 +142,8 @@ def handle_talk_alex_action(choice_num):
             print_slow("Alex hands you some detailed notes on disaster preparedness. You gain **Survival Notes**.", mode='slow')
         elif choice_num == 3: # Talk about newspaper club business.
             print_slow("You chat about the next newspaper issue, discussing headlines and deadlines. It's a mundane, comforting distraction.", mode='slow')
+            game_state["trust_alex"] += 0.5
+            print_slow("You feel slightly more connected with Alex.")
     else: # If already talked to Alex about vision
         if game_state["trust_alex"] >= 4:
             print_slow("Alex is still processing your warning. 'I'm checking the news, but nothing official yet. Still, I'm with you. What's our next move?'", mode='slow')
@@ -169,6 +171,8 @@ def handle_talk_maya_action(choice_num):
                 print_slow("Maya looks uncomfortable and quickly changes the subject, clearly worried about your mental state.", mode='slow')
         elif choice_num == 2: # Talk about art or other light topics.
             print_slow("You talk about her sketches and the latest school gossip. Maya seems happy for the distraction.", mode='slow')
+            game_state["trust_maya"] += 0.5
+            print_slow("You feel slightly more connected with Maya.")
     else:
         if game_state["trust_maya"] >= 4:
             print_slow("Maya is anxious but supportive. 'I'm here for you, no matter what happens. We'll face this together.'", mode='slow')
@@ -181,37 +185,39 @@ def handle_talk_maya_action(choice_num):
 def handle_talk_ben_action(choice_num):
     """Handles specific choices when talking to Ben."""
     if not game_state.get("talked_to_ben_about_vision", False):
-        if choice_num == 1: # Tell him about the vision.
+        if choice_num == 1: # Tell him about the nuclear missile vision.
             print_slow("You tell Ben about the nuclear missile vision, emphasizing the urgency and practical implications.", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_ben_about_vision"] = True
             if game_state["trust_ben"] >= 4:
-                print_slow("Ben's eyes narrow, considering. 'That's heavy... but if it's true, we need supplies. A place to go. What's the plan?'")
+                print_slow("Ben's eyes narrow, considering. 'That's heavy... but if it's true, we need supplies. A place to go. What's the plan?'", mode='slow')
                 game_state["trust_ben"] += 10
                 game_state["knowledge"] += 1
                 game_state["inventory"].append("survival_checklist")
-                print_slow("Ben starts listing things: 'Water, non-perishables, a map, maybe a working vehicle...' You gained **Survival Checklist**.")
+                print_slow("Ben starts listing things: 'Water, non-perishables, a map, maybe a working vehicle...' You gained **Survival Checklist**.", mode='slow')
             elif game_state["trust_ben"] >= 2:
-                print_slow("Ben looks uncomfortable. 'Look, I'm not really good with... hypothetical apocalypses. What's the actual problem?' He tries to change the subject.")
+                print_slow("Ben looks uncomfortable. 'Look, I'm not really good with... hypothetical apocalypses. What's the actual problem?' He tries to change the subject.", mode='slow')
                 game_state["trust_ben"] -= 1
             else:
-                print_slow("Ben shakes his head. 'Sounds like a bad acid trip, man. You okay?' He dismisses your story completely.")
+                print_slow("Ben shakes his head. 'Sounds like a bad acid trip, man. You okay?' He dismisses your story completely.", mode='slow')
                 game_state["trust_ben"] -= 2
         elif choice_num == 2: # Ask him for help with something practical (e.g., getting supplies).
-            print_slow("You ask Ben: 'I need to get out of here, or get some serious supplies. You know this town better than anyone. Any ideas?'")
-            print_slow("Ben taps his chin. 'Hmm. A truck with no gas... that's a problem.' He pauses. 'I might know where some spare fuel cans are. And old Mr. Henderson's truck always has the keys in it.'")
+            print_slow("You ask Ben: 'I need to get out of here, or get some serious supplies. You know this town better than anyone. Any ideas?'", mode='slow')
+            print_slow("Ben taps his chin. 'Hmm. A truck with no gas... that's a problem.' He pauses. 'I might know where some spare fuel cans are. And old Mr. Henderson's truck always has the keys in it.'", mode='slow')
             game_state["trust_ben"] += 5
             game_state["inventory"].append("tip_henderson_truck")
-            print_slow("Ben offers to help you find gas for a vehicle! Your **trust with Ben** improves significantly. You gained a **Tip about Mr. Henderson's Truck**.")
+            print_slow("Ben offers to help you find gas for a vehicle! Your **trust with Ben** improves significantly. You gained a **Tip about Mr. Henderson's Truck**.", mode='slow')
         elif choice_num == 3: # Talk about his radio projects.
-            print_slow("You talk about his current radio project. He passionately explains frequencies and circuits, a welcome distraction.")
+            print_slow("You talk about his current radio project. He passionately explains frequencies and circuits, a welcome distraction.", mode='slow')
+            game_state["trust_ben"] += 1
+            print_slow("Ben seems to appreciate your interest.")
     else: # If Ben has already been told the vision
         if game_state["trust_ben"] >= 4:
-            print_slow("Ben is focused on solutions. 'Okay, so what's the next practical step? We need a clear objective.'")
+            print_slow("Ben is focused on solutions. 'Okay, so what's the next practical step? We need a clear objective.'", mode='slow')
         elif game_state["trust_ben"] >= 2:
-            print_slow("Ben gives you a sympathetic look but quickly shifts the conversation to something more concrete.")
+            print_slow("Ben gives you a sympathetic look but quickly shifts the conversation to something more concrete.", mode='slow')
         else:
-            print_slow("Ben avoids eye contact and finds an excuse to fiddle with his radio, clearly uncomfortable with you.")
+            print_slow("Ben avoids eye contact and finds an excuse to fiddle with his radio, clearly uncomfortable with you.", mode='slow')
     advance_time(0.5, silent=True)
 
 def handle_talk_jake_action(choice_num):
@@ -277,6 +283,8 @@ def handle_town_hall_interaction_action(choice_num):
         print_slow("You try to calmly explain your vision, the impending doom, the need for action.")
         print_slow("The secretary listens, her eyes widening slightly, but then she shakes her head.")
         print_slow("'Son, I appreciate your concern, but the Mayor is very busy. Perhaps you should see a doctor.'")
+        game_state["authority_of_town"] -= 0.5
+        print_slow("You feel a slight dip in how seriously you're being taken.")
     elif choice_num == 3: # Leave politely.
         print_slow("You decide it's a dead end for now and leave quietly.")
         game_state["current_location"] = "town_square"
@@ -392,7 +400,6 @@ def handle_involve_friends_escape_action(choice_num):
 
 
 def handle_general_store_interaction_action(choice_num):
-    """Handles specific choices at the General Store."""
     cash_unit_cost = 1 # Define cost for general store items
 
     if choice_num == 1: # Try to buy supplies (e.g., food, gas).
@@ -414,11 +421,43 @@ def handle_general_store_interaction_action(choice_num):
     elif choice_num == 3: # Talk to Mr. Jenkins about the situation.
         print_slow("You try to tell Mr. Jenkins about your vision. He stares at you with a blank expression.")
         print_slow("'Kid, just pay for your candy,' he grunts, clearly not believing a word.")
+        game_state["authority_of_town"] -= 0.5
+        print_slow("You feel less credible in this town.")
     elif choice_num == 4: # Leave the store.
         print_slow("You leave the general store.")
         game_state["current_location"] = "town_square"
     advance_time(0.5)
     return None # Default return for actions without sub-menus
+
+
+def handle_jake_favor_action():
+    """Handles asking Jake for a favor, after he owes one."""
+    if game_state.get("jake_owed_favor", False):
+        print_slow("You approach Jake. 'Remember that favor you owe me?'")
+        print_slow("Jake grunts. 'Yeah, yeah. What do you need?'")
+        # Give a specific useful item as a favor
+        if game_state["cash"] < 1:
+            print_slow("You ask him to 'acquire' some cash for you.")
+            print_slow("Jake nods, disappears for a bit, and returns with a single cash unit, looking smug. 'Don't ask where I got it.'")
+            game_state["cash"] += 1
+            print_slow("You gained **1 Cash Unit**!")
+        elif game_state["inventory"].count("supplies") < 2:
+            print_slow("You ask him to get some general supplies.")
+            print_slow("Jake rolls his eyes, but eventually comes back with a small bag of non-perishables. 'Happy now?'")
+            game_state["inventory"].append("supplies")
+            print_slow("You gained some **Supplies**!")
+        else:
+            print_slow("You ask him to get a rare tech part.")
+            print_slow("Jake sighs, but after some time, he returns with a scavenged **Tech Part**. 'Took some doing. You owe me.'")
+            game_state["tech_parts"] += 1
+            game_state["inventory"].append("scavenged_tech_part")
+            print_slow("You gained a **Tech Part**!")
+        game_state["jake_owed_favor"] = False # Favor is used up
+        game_state["trust_jake"] -= 1 # Using a favor might slightly annoy him
+        print_slow("Jake's favor has been used.")
+    else:
+        print_slow("Jake doesn't owe you a favor right now.")
+    advance_time(0.5)
 
 
 def handle_steal_general_store_action(sub_choice_num):

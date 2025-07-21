@@ -25,7 +25,9 @@ from game_actions import (
     handle_allies_escape_ending, handle_solo_escape_ending,
     handle_town_evacuated_ending, handle_missile_destroyed_ending,
     handle_time_up_ending, handle_jailed_ending, # Specific ending messages
-    buy_tech_parts_action # New tech parts buying action
+    buy_tech_parts_action, # New tech parts buying action
+    handle_steal_school_action, handle_steal_tech_store_action,
+    handle_jake_favor_action
 )
 
 # --- Helper Functions for Menus ---
@@ -167,16 +169,20 @@ def handle_school_entrance_menu():
 
 def handle_newspaper_club_menu():
     def handle_friends_submenu():
-        options = [
-            ("Talk to Alex", lambda: handle_talk_alex_menu()),
-            ("Talk to Maya", lambda: handle_talk_maya_menu()),
-            ("Talk to Ben", lambda: handle_talk_ben_menu()),
-            ("Go back", lambda: None),
-        ]
-        action = display_menu(options)
-        if action:
-            action()
-            handle_friends_submenu()  # Stay in friends submenu until 'Go back'
+        while True:
+            options = [
+                ("Talk to Alex", lambda: handle_talk_alex_menu()),
+                ("Talk to Maya", lambda: handle_talk_maya_menu()),
+                ("Talk to Ben", lambda: handle_talk_ben_menu()),
+            ]
+            if game_state.get("jake_owed_favor", False):
+                options.append(("Ask Jake for a favor", lambda: handle_jake_favor_action()))
+            options.append(("Go back", lambda: None))
+            action = display_menu(options)
+            if action:
+                action()
+            else:
+                break
     options = [
         ("Talk to friends", handle_friends_submenu),
         ("Go to school entrance", lambda: set_location("school_entrance")),
