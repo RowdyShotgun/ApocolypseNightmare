@@ -166,11 +166,19 @@ def handle_school_entrance_menu():
     action()
 
 def handle_newspaper_club_menu():
+    def handle_friends_submenu():
+        options = [
+            ("Talk to Alex", lambda: handle_talk_alex_menu()),
+            ("Talk to Maya", lambda: handle_talk_maya_menu()),
+            ("Talk to Ben", lambda: handle_talk_ben_menu()),
+            ("Go back", lambda: None),
+        ]
+        action = display_menu(options)
+        if action:
+            action()
+            handle_friends_submenu()  # Stay in friends submenu until 'Go back'
     options = [
-        ("Talk to Alex", lambda: handle_talk_alex_menu()),
-        ("Talk to Maya", lambda: handle_talk_maya_menu()),
-        ("Talk to Ben", lambda: handle_talk_ben_menu()),
-        ("Talk to Jake", lambda: handle_talk_jake_menu()),
+        ("Talk to friends", handle_friends_submenu),
         ("Go to school entrance", lambda: set_location("school_entrance")),
         ("Show inventory", lambda: display_inventory()),
         ("Show status", lambda: display_status()),

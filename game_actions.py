@@ -465,6 +465,18 @@ def handle_go_to_class_action():
         advance_time(2)
         game_state["has_attended_class"] = True # NEW: Set flag after attending
         print_slow("You feel slightly more informed, but less calm.")
+        # After class, present menu to talk to Jake or return
+        while True:
+            print_slow("After class, you see Jake lingering by the door.")
+            print("1. Talk to Jake")
+            print("2. Return to school entrance")
+            choice = input("> ").strip()
+            if choice == "1":
+                handle_talk_jake_action(1) # Pass a dummy choice for Jake's specific logic
+            elif choice == "2":
+                break
+            else:
+                print_slow("Invalid choice. Please enter 1 or 2.")
     else:
         print_slow("You've already attended class today. There's nothing new to learn from another lecture.")
         advance_time(0.1, silent=True) # Small time cost for trying again
