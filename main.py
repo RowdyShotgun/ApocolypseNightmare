@@ -1,10 +1,7 @@
 """
 main.py
-
-Entry point for ApocalypseNightmare.
-- Greets the player and prompts for their name.
-- Sets up the initial game state and starts the main menu loop.
-- Handles game restart logic.
+# by Mitchell Murphy
+# A text adventure about a missile attack on a small town.
 """
 from game_data import game_state, locations, endings
 from utils import print_slow
@@ -27,66 +24,96 @@ def show_location():
     print(f"Inventory: {', '.join(sorted(inventory)) if inventory else 'empty'}")
 
 
-def choose_action():
+def hybrid_parser():
     loc = game_state["current_location"]
     data = locations[loc]
     exit_names = list(data["exits"].keys())
     action_names = list(data["interactions"].keys())
     total_choices = len(exit_names) + len(action_names) + 1
-    print("\nChoose a number:")
-    choice = input("> ").strip()
-    if not choice.isdigit() or not (1 <= int(choice) <= total_choices):
-        print_slow("Invalid choice. Try again.")
+    user_input = input("\nType a number or a command: ").strip().lower()
+
+    # Menu number input
+    if user_input.isdigit():
+        choice = int(user_input)
+        if 1 <= choice <= len(exit_names):
+            game_state["current_location"] = data["exits"][exit_names[choice - 1]]
+            return True
+        elif len(exit_names) < choice <= len(exit_names) + len(action_names):
+            action_idx = choice - len(exit_names) - 1
+            action = action_names[action_idx]
+            return handle_action(loc, action)
+        elif choice == total_choices:
+            print_slow("Thanks for playing!")
+            return False
+        else:
+            print_slow("Invalid choice. Try again.")
+            return True
+
+    # String parser input
+    # Try exits
+    for exit_name, dest in data["exits"].items():
+        if user_input == exit_name or user_input == f"go to {exit_name}" or user_input == f"move to {exit_name}":
+            game_state["current_location"] = dest
+            return True
+    # Try actions
+    for action in data["interactions"]:
+        if user_input == action or user_input.startswith(action):
+            return handle_action(loc, action)
+    # Inventory and help
+    if user_input == "inventory":
+        print_slow(f"Inventory: {', '.join(sorted(inventory)) if inventory else 'empty'}")
         return True
-    choice = int(choice)
-    if 1 <= choice <= len(exit_names):
-        game_state["current_location"] = data["exits"][exit_names[choice - 1]]
+    if user_input == "help":
+        print_slow("Type a number, an exit name, an action, or 'inventory'.")
         return True
-    elif len(exit_names) < choice <= len(exit_names) + len(action_names):
-        action_idx = choice - len(exit_names) - 1
-        action = action_names[action_idx]
-        print_slow(data["interactions"][action])
-        # Inventory and endings logic
-        if loc == "bedroom" and action == "use computer":
-            if "data" not in inventory:
-                print_slow("You found important data about the missile!")
-                inventory.add("data")
-            else:
-                print_slow("You already have the data.")
-        if loc == "tech_store" and action == "get tech part":
-            if "data" in inventory and "tech part" not in inventory:
-                print_slow("You show your data and receive a tech part!")
-                inventory.add("tech part")
-            elif "tech part" in inventory:
-                print_slow("You already have the tech part.")
-            else:
-                print_slow("You need data before you can get the tech part.")
-        if loc == "military_base" and action == "use tech part":
-            if "tech part" in inventory:
-                game_state["ending"] = "missile_destroyed"
-                return False
-            else:
-                print_slow("You need a tech part to do this!")
-        # Minimal endings logic
-        if loc == "bus_stop" and action == "wait for bus":
-            game_state["ending"] = "escaped"
-            return False
-        if loc == "military_base" and action == "approach gate":
-            game_state["ending"] = "caught"
-            return False
-        if loc == "bedroom" and action == "think":
-            game_state["ending"] = "waited"
-            return False
-        if loc == "newspaper_club" and action == "rally friends":
-            game_state["ending"] = "allies_saved"
-            return False
-        if loc == "neighbors_bunker" and action == "hide in bunker":
-            game_state["ending"] = "bunker"
-            return False
-        return True
-    else:
+    if user_input == "exit":
         print_slow("Thanks for playing!")
         return False
+    print_slow("I don't understand that command.")
+    return True
+
+
+def handle_action(loc, action):
+    data = locations[loc]
+    print_slow(data["interactions"][action])
+    # Inventory and endings logic
+    if loc == "bedroom" and action == "use computer":
+        if "data" not in inventory:
+            print_slow("You found important data about the missile!")
+            inventory.add("data")
+        else:
+            print_slow("You already have the data.")
+    if loc == "tech_store" and action == "get tech part":
+        if "data" in inventory and "tech part" not in inventory:
+            print_slow("You show your data and receive a tech part!")
+            inventory.add("tech part")
+        elif "tech part" in inventory:
+            print_slow("You already have the tech part.")
+        else:
+            print_slow("You need data before you can get the tech part.")
+    if loc == "military_base" and action == "use tech part":
+        if "tech part" in inventory:
+            game_state["ending"] = "missile_destroyed"
+            return False
+        else:
+            print_slow("You need a tech part to do this!")
+    # Minimal endings logic
+    if loc == "bus_stop" and action == "wait for bus":
+        game_state["ending"] = "escaped"
+        return False
+    if loc == "military_base" and action == "approach gate":
+        game_state["ending"] = "caught"
+        return False
+    if loc == "bedroom" and action == "think":
+        game_state["ending"] = "waited"
+        return False
+    if loc == "newspaper_club" and action == "rally friends":
+        game_state["ending"] = "allies_saved"
+        return False
+    if loc == "neighbors_bunker" and action == "hide in bunker":
+        game_state["ending"] = "bunker"
+        return False
+    return True
 
 
 def game():
@@ -103,7 +130,7 @@ def game():
 
     while True:
         show_location()
-        if not choose_action():
+        if not hybrid_parser():
             break
     if game_state["ending"]:
         print_slow("\n--- Ending ---")
