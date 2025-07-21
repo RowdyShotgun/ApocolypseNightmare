@@ -105,8 +105,14 @@ def handle_action(loc, action):
         game_state["ending"] = "caught"
         return False
     if loc == "bedroom" and action == "think":
-        game_state["ending"] = "waited"
-        return False
+        game_state.setdefault("think_count", 0)
+        game_state["think_count"] += 1
+        if game_state["think_count"] >= 3:
+            game_state["ending"] = "waited"
+            return False
+        else:
+            print_slow("You think and worry, but nothing changes...")
+            return True
     if loc == "newspaper_club" and action == "rally friends":
         game_state["ending"] = "allies_saved"
         return False
@@ -117,7 +123,7 @@ def handle_action(loc, action):
 
 
 def game():
-    print_slow("Welcome to ApocalypseNightmare!")
+    print_slow("Welcome to Apocalypse Nightmare!")
     input("Press Enter to begin...")
     name = input("What is your name? (Press Enter for default) ").strip()
     if not name:
@@ -126,6 +132,7 @@ def game():
     game_state["protagonist_name"] = name
     game_state["current_location"] = "bedroom"
     game_state["ending"] = None
+    game_state["think_count"] = 0
     inventory.clear()
 
     while True:
