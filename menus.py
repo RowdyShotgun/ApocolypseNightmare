@@ -88,7 +88,6 @@ def display_status():
 # Each handler displays its menu and dispatches to game_actions.py functions.
 
 def handle_bedroom_menu():
-    display_location() # Only call once per menu loop
     options = [
         ("Go to town", lambda: set_location("town_square")),
         ("Go to school", lambda: set_location("school_entrance")),
@@ -103,9 +102,8 @@ def handle_bedroom_menu():
     action()
 
 def handle_living_room_menu():
-    display_location()
     options = [
-        ("Talk to parents", lambda: handle_talk_parents_menu()), # Sub-menu
+        ("Talk to parents", lambda: handle_talk_parents_menu()),
         ("Go to bedroom", lambda: set_location("bedroom")),
         ("Go to front door", lambda: set_location("front_door")),
         ("Show inventory", lambda: display_inventory()),
@@ -117,7 +115,6 @@ def handle_living_room_menu():
     action()
 
 def handle_front_door_menu():
-    display_location()
     options = [
         ("Go to town (Town Square)", lambda: set_location("town_square")),
         ("Go to school (School Entrance)", lambda: set_location("school_entrance")),
@@ -132,23 +129,19 @@ def handle_front_door_menu():
     action()
 
 def handle_town_square_menu():
-    display_location()
     # Check for game-ending conditions based on accumulated state in Town Square
     if game_state["mayor_warned"] and game_state["mob_of_civilians"] and game_state["time_remaining"] > 0:
         handle_town_evacuated_ending()
-        return # Exit menu to trigger game end in main_menu_loop
-
+        return
     options = [
         ("Warn people openly", lambda: handle_shout_warning()),
-        ("Work at Burger Hut", lambda: set_location("burger_hut")), # Change location, burger_hut_menu will be shown next
+        ("Work at Burger Hut", lambda: set_location("burger_hut")),
         ("Go to front door (Home)", lambda: set_location("front_door")),
         ("Go to bus stop", lambda: set_location("bus_stop")),
         ("Go to town hall", lambda: set_location("town_hall")),
-        ("Go to pawn shop", lambda: set_location("pawn_shop")),
         ("Go to tech store", lambda: set_location("tech_store")),
         ("Go to military base", lambda: set_location("military_base")),
         ("Go to general store", lambda: set_location("general_store")),
-        ("Go to newspaper club", lambda: set_location("newspaper_club")),
         ("Show inventory", lambda: display_inventory()),
         ("Show status", lambda: display_status()),
         ("Help", lambda: print_slow("Warn people, work for cash, or move to other key locations.")),
@@ -158,29 +151,27 @@ def handle_town_square_menu():
     action()
 
 def handle_school_entrance_menu():
-    display_location()
     options = [
-        ("Go to class", lambda: handle_go_to_class_action()), # Action, which advances time
+        ("Go to class", lambda: handle_go_to_class_action()),
+        ("Steal from school", lambda: handle_steal_school_action()),
         ("Go to newspaper club", lambda: set_location("newspaper_club")),
         ("Go home (front door)", lambda: set_location("front_door")),
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", lambda: display_inventory()),
         ("Show status", lambda: display_status()),
-        ("Help", lambda: print_slow("Attend class, visit the newspaper club, or leave school.")),
+        ("Help", lambda: print_slow("Attend class, steal, visit the newspaper club, or leave school.")),
         ("Quit", lambda: exit_game()),
     ]
     action = display_menu(options)
     action()
 
 def handle_newspaper_club_menu():
-    display_location()
     options = [
-        ("Talk to Alex", lambda: handle_talk_alex_menu()), # Sub-menu for Alex
-        ("Talk to Maya", lambda: handle_talk_maya_menu()), # Sub-menu for Maya
-        ("Talk to Ben", lambda: handle_talk_ben_menu()),   # Sub-menu for Ben
-        ("Talk to Jake", lambda: handle_talk_jake_menu()), # Sub-menu for Jake
+        ("Talk to Alex", lambda: handle_talk_alex_menu()),
+        ("Talk to Maya", lambda: handle_talk_maya_menu()),
+        ("Talk to Ben", lambda: handle_talk_ben_menu()),
+        ("Talk to Jake", lambda: handle_talk_jake_menu()),
         ("Go to school entrance", lambda: set_location("school_entrance")),
-        ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", lambda: display_inventory()),
         ("Show status", lambda: display_status()),
         ("Help", lambda: print_slow("Chat with your friends or leave the club.")),
@@ -240,27 +231,14 @@ def handle_bus_stop_menu():
     action = display_menu(options)
     action()
 
-def handle_pawn_shop_menu():
-    display_location()
-    options = [
-        ("Go to town square", lambda: set_location("town_square")),
-        ("Show inventory", lambda: display_inventory()),
-        ("Show status", lambda: display_status()),
-        ("Help", lambda: print_slow("Return to town square.")),
-        ("Quit", lambda: exit_game()),
-    ]
-    action = display_menu(options)
-    action()
-
 def handle_tech_store_menu():
-    display_location()
-    tech_parts_cost = 1 # CHANGED: Tech parts cost is 1 cash unit
     options = [
-        (f"Buy tech parts ({tech_parts_cost} Cash unit(s) required)", buy_tech_parts_action), # UPDATED DESC, direct call
+        ("Buy tech parts (1 Cash unit required)", buy_tech_parts_action),
+        ("Steal from tech store", lambda: handle_steal_tech_store_action()),
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", lambda: display_inventory()),
         ("Show status", lambda: display_status()),
-        ("Help", lambda: print_slow("Buy tech parts or return to town square.")),
+        ("Help", lambda: print_slow("Buy or steal tech parts, or return to town square.")),
         ("Quit", lambda: exit_game()),
     ]
     action = display_menu(options)
@@ -600,9 +578,8 @@ menu_handlers = {
     "general_store": handle_general_store_menu,
     "town_hall": handle_town_hall_menu,
     "bus_stop": handle_bus_stop_menu,
-    "pawn_shop": handle_pawn_shop_menu,
     "tech_store": handle_tech_store_menu,
-    "military_base": handle_military_base_actions_internal_menu, # This is the menu for INSIDE the base
+    "military_base": handle_military_base_actions_internal_menu,
     "outskirts_road": handle_outskirts_road_menu,
     "neighbors_bunker": handle_neighbors_bunker_menu,
     "burger_hut": handle_burger_hut_menu,

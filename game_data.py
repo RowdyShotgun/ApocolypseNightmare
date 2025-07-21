@@ -76,18 +76,17 @@ locations = {
         }
     },
     "town_square": {
-        "description": "The heart of your small town. A few people are already out and about. The old clock tower reads 9:00 AM. It feels like any other day.",
-        # UPDATED EXITS to reflect new flow
+        "description": "The heart of your small town. A few people are already out and about. The day feels like any other, but you know time is running out.",
         "exits": {"front door": "front_door", "bus station": "bus_stop", "town hall": "town_hall",
-                  "pawn shop": "pawn_shop", "tech store": "tech_store", "military base": "military_base",
-                  "general store": "general_store", "newspaper club": "newspaper_club"}, # Re-added general store and newspaper club for direct travel from town
+                  "tech store": "tech_store", "military base": "military_base",
+                  "general store": "general_store"},
         "interactions": {
             "talk people": "Most people are just going about their day. They look happy, oblivious. Trying to warn them might just make you look crazy.",
-            "warn openly": "You open your mouth, but the words catch in your throat. Would anyone believe you? You'd just be a panicked voice in the wind.", # Changed from shout warning to warn openly
-            "work at burger hut": "The Burger Hut sign beckons. You could earn some quick cash." # New interaction
+            "warn openly": "You open your mouth, but the words catch in your throat. Would anyone believe you? You'd just be a panicked voice in the wind.",
+            "work at burger hut": "The Burger Hut sign beckons. You could earn some quick cash."
         }
     },
-    "school_entrance": { # NEW LOCATION
+    "school_entrance": {
         "description": "The main entrance to your high school. The morning buzz of students is absent, replaced by an eerie quiet.",
         "exits": {"home": "front_door", "town": "town_square", "newspaper club": "newspaper_club"},
         "interactions": {
@@ -97,13 +96,8 @@ locations = {
     },
     "newspaper_club": {
         "description": "The dusty, cramped room where the school newspaper club meets. The air smells of old paper and ink. Your friends are here.",
-        "exits": {"school entrance": "school_entrance", "town square": "town_square"}, # Added school entrance as an exit
-        "interactions": {
-            "talk alex": "Alex is meticulously organizing old clippings.",
-            "talk maya": "Maya is sketching something in her notebook.",
-            "talk ben": "Ben is tinkering with an old radio.",
-            "talk jake": "Jake is loitering by the door, looking bored."
-        }
+        "exits": {"school entrance": "school_entrance"},
+        "interactions": {}
     },
     "general_store": {
         "description": "The local general store, smelling faintly of dust and old candy. Mr. Jenkins, the proprietor, eyes you suspiciously.",

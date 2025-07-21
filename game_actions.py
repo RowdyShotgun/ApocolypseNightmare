@@ -60,10 +60,8 @@ def display_location():
     print_slow(f"\n--- {game_state['current_location'].replace('_', ' ').title()} ---")
     print_slow(f"Time: {game_state['time_remaining']} hours remaining ({game_state['current_day_phase'].title()})")
     print_slow(locations[game_state["current_location"]]["description"])
-    print("\nExits:")
-    for exit_name in locations[game_state["current_location"]]["exits"]:
-        print(f"- {exit_name.title()}")
-    print("-" * 30)
+    # Removed Exits section
+
 
 # --- Initial Event ---
 def handle_vision_event():
@@ -713,3 +711,25 @@ def buy_tech_parts_action():
     else:
         print_slow(f"You don't have enough cash for tech parts. You have {game_state['cash']} cash unit(s), but need {tech_parts_cost}.")
         advance_time(0.1, silent=True)
+
+def handle_steal_school_action():
+    """Handles stealing from school with a 65% chance of failure (jail)."""
+    print_slow("You look for something valuable to steal at school...")
+    if random.random() < 0.65:
+        print_slow("You're caught by a teacher! The police are called. You are arrested.")
+        game_state["ending_achieved"] = "Jailed"
+    else:
+        print_slow("You manage to swipe a fancy calculator from the supply closet and slip away unnoticed.")
+        game_state["inventory"].append("stolen_calculator")
+    advance_time(0.5)
+
+def handle_steal_tech_store_action():
+    """Handles stealing from tech store with a 65% chance of failure (jail)."""
+    print_slow("You try to pocket a tech part while the clerk isn't looking...")
+    if random.random() < 0.65:
+        print_slow("The alarm blares! Security grabs you before you can escape. You are arrested.")
+        game_state["ending_achieved"] = "Jailed"
+    else:
+        print_slow("You successfully steal a tech part and sneak out of the store.")
+        game_state["inventory"].append("stolen_tech_part")
+    advance_time(0.5)
