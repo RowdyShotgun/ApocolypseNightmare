@@ -1,4 +1,38 @@
-# game_data.py
+"""
+game_data.py
+
+Holds all persistent game state, character definitions, and location/scene data for the text adventure game.
+- game_state: Tracks player progress, inventory, and flags.
+- characters: Contains all character descriptions and roles.
+- locations: Contains all location descriptions, exits, and interactions.
+"""
+
+# --- Game Constants ---
+INVENTORY_ITEMS = {
+    "BACKPACK": "backpack",
+    "CAR_KEYS": "car_keys",
+    "TECH_PARTS": "tech_parts",
+    "SUPPLIES": "supplies",
+    "EMERGENCY_KIT": "emergency_kit",
+    "NOTEBOOK": "notebook",
+    "CIRCUIT_BOARD": "circuit_board",
+    "STOLEN_CALCULATOR": "stolen_calculator",
+    "STOLEN_TECH_PART": "stolen_tech_part",
+    "GAS_CAN": "gas_can"
+}
+
+TRUST_THRESHOLDS = {
+    "HIGH": 4,
+    "MEDIUM": 2,
+    "LOW": 1
+}
+
+TIME_PHASES = {
+    "MORNING": "morning",
+    "AFTERNOON": "afternoon",
+    "EVENING": "evening",
+    "NIGHT": "night"
+}
 
 # --- Game State Variables ---
 game_state = {
@@ -14,7 +48,6 @@ game_state = {
     "car_gas": 0, # Percentage of gas in Mr. Henderson's truck
     "bunker_unlocked": False, # Is the neighbor's bunker accessible
     "military_base_accessed": False, # Has player successfully accessed the base
-    "missile_destroyed": False, # Has the missile been destroyed
 
     "trust_alex": 2,    # Skeptic: low trust, tends to need proof
     "trust_maya": 5,    # Optimist: high trust, more emotionally receptive
@@ -29,9 +62,85 @@ game_state = {
     # New flags for time-based narrative cues
     "news_warning_issued": False,
     "military_activity_noticed": False,
-    "pending_action": None, # For multi-step or ambiguous input handling
     "mayor_warned": False, # For town evacuation ending
+    "has_attended_class": False, # Track if class has been attended today
+    "protagonist_name": "You", # Default protagonist name
 }
+
+# --- Game State Validation ---
+def validate_game_state():
+    """Validate the current game state for consistency and integrity."""
+    errors = []
+    
+    # Check for valid location
+    if game_state["current_location"] not in locations:
+        errors.append(f"Invalid location: {game_state['current_location']}")
+    
+    # Check for valid time remaining
+    if game_state["time_remaining"] < 0:
+        errors.append(f"Invalid time remaining: {game_state['time_remaining']}")
+    
+    # Check for valid day phase
+    if game_state["current_day_phase"] not in TIME_PHASES.values():
+        errors.append(f"Invalid day phase: {game_state['current_day_phase']}")
+    
+    # Check for valid trust levels
+    for character in ["trust_alex", "trust_maya", "trust_ben", "trust_jake"]:
+        if character in game_state:
+            trust = game_state[character]
+            if not isinstance(trust, (int, float)) or trust < 0 or trust > 10:
+                errors.append(f"Invalid trust level for {character}: {trust}")
+    
+    # Check for valid resource values
+    for resource in ["knowledge", "tech_parts", "cash", "authority_of_town"]:
+        if resource in game_state:
+            value = game_state[resource]
+            if not isinstance(value, (int, float)) or value < 0:
+                errors.append(f"Invalid {resource}: {value}")
+    
+    # Check for valid inventory items
+    for item in game_state.get("inventory", []):
+        if item not in INVENTORY_ITEMS.values() and not item.startswith("stolen_") and item not in ["bunker_rumor", "bunker_supplies_taken", "survival_notes_alex", "survival_checklist", "tip_henderson_truck", "burger_hut_paycheck", "radio_warning"]:
+            errors.append(f"Unknown inventory item: {item}")
+    
+    return errors
+
+def reset_game_state():
+    """Reset game state to initial values."""
+    global game_state
+    
+    # Store the original template
+    original_state = {
+        "current_location": "bedroom",
+        "inventory": [],
+        "knowledge": 0,
+        "tech_parts": 0,
+        "mob_of_civilians": False,
+        "cash": 0,
+        "authority_of_town": 0,
+        "parents_warned": False,
+        "has_car_keys": False,
+        "car_gas": 0,
+        "bunker_unlocked": False,
+        "military_base_accessed": False,
+        "trust_alex": 2,
+        "trust_maya": 5,
+        "trust_ben": 3,
+        "trust_jake": 1,
+        "has_shared_vision_with_friends": False,
+        "time_remaining": 16,
+        "current_day_phase": "morning",
+        "ending_achieved": None,
+        "news_warning_issued": False,
+        "military_activity_noticed": False,
+        "mayor_warned": False,
+        "has_attended_class": False,
+        "protagonist_name": "You",
+    }
+    
+    # Clear and reset
+    game_state.clear()
+    game_state.update(original_state)
 
 # --- Character Definitions (for dialogue and interaction) ---
 characters = {
@@ -50,7 +159,10 @@ characters = {
 # --- Locations and Scenes ---
 locations = {
     "bedroom": {
-        "description": "Your small, cluttered bedroom in your West Virginia home. The morning light filters through the window. The terrifying vision still burns in your mind.",
+        "description": (
+            "Your small, cluttered bedroom in your West Virginia home. The morning light filters through the window. "
+            "The terrifying vision still burns in your mind."
+        ),
         "exits": {"living room": "living_room", "front door": "front_door"},
         "interactions": {
             "look window": "You see the familiar, peaceful street outside. It's hard to believe what you just saw. Normalcy feels like a fragile illusion.",
@@ -60,7 +172,9 @@ locations = {
         }
     },
     "living_room": {
-        "description": "The cozy, slightly worn living room. Your parents are here, engaged in their morning routine.",
+        "description": (
+            "The cozy, slightly worn living room. Your parents are here, engaged in their morning routine."
+        ),
         "exits": {"bedroom": "bedroom", "front door": "front_door"},
         "interactions": {
             "talk parents": "Your parents are busy with breakfast. They'd never believe you, not without solid proof.",
@@ -69,17 +183,22 @@ locations = {
         }
     },
     "front_door": {
-        "description": "The front door leading outside. The world beyond awaits, oblivious to the ticking clock.",
+        "description": (
+            "The front door leading outside. The world beyond awaits, oblivious to the ticking clock."
+        ),
         "exits": {"bedroom": "bedroom", "living room": "living_room", "town": "town_square", "school": "school_entrance"},
         "interactions": {
             "open door": "The fresh morning air hits you. The town is still quiet, bathed in an innocent light."
         }
     },
     "town_square": {
-        "description": "The heart of your small town. A few people are already out and about. The day feels like any other, but you know time is running out.",
+        "description": (
+            "The heart of your small town. A few people are already out and about. The day feels like any other, "
+            "but you know time is running out."
+        ),
         "exits": {"front door": "front_door", "bus station": "bus_stop", "town hall": "town_hall",
                   "tech store": "tech_store", "military base": "military_base",
-                  "general store": "general_store"},
+                  "general store": "general_store", "pawn shop": "pawn_shop"},
         "interactions": {
             "talk people": "Most people are just going about their day. They look happy, oblivious. Trying to warn them might just make you look crazy.",
             "warn openly": "You open your mouth, but the words catch in your throat. Would anyone believe you? You'd just be a panicked voice in the wind.",
@@ -87,7 +206,9 @@ locations = {
         }
     },
     "school_entrance": {
-        "description": "The main entrance to your high school. The morning buzz of students is absent, replaced by an eerie quiet.",
+        "description": (
+            "The main entrance to your high school. The morning buzz of students is absent, replaced by an eerie quiet."
+        ),
         "exits": {"home": "front_door", "town": "town_square", "newspaper club": "newspaper_club"},
         "interactions": {
             "go to class": "You consider attending your morning classes.",
@@ -95,12 +216,17 @@ locations = {
         }
     },
     "newspaper_club": {
-        "description": "The dusty, cramped room where the school newspaper club meets. The air smells of old paper and ink. Your friends are here.",
+        "description": (
+            "The dusty, cramped room where the school newspaper club meets. The air smells of old paper and ink. "
+            "Your friends are here."
+        ),
         "exits": {"school entrance": "school_entrance"},
         "interactions": {}
     },
     "general_store": {
-        "description": "The local general store, smelling faintly of dust and old candy. Mr. Jenkins, the proprietor, eyes you suspiciously.",
+        "description": (
+            "The local general store, smelling faintly of dust and old candy. Mr. Jenkins, the proprietor, eyes you suspiciously."
+        ),
         "exits": {"town square": "town_square"},
         "interactions": {
             "buy food": "You don't have any money.",
@@ -108,14 +234,18 @@ locations = {
         }
     },
     "town_hall": {
-        "description": "The town hall, a stately but quiet building. Secretary Davies sits behind a formidable desk.",
+        "description": (
+            "The town hall, a stately but quiet building. Secretary Davies sits behind a formidable desk."
+        ),
         "exits": {"town square": "town_square"},
         "interactions": {
             "talk secretary": "The secretary looks up, unimpressed. 'Do you have an appointment?'"
         }
     },
     "bus_stop": {
-        "description": "A small, weathered shelter with a faded bus schedule. The road stretches out towards the next town.",
+        "description": (
+            "A small, weathered shelter with a faded bus schedule. The road stretches out towards the next town."
+        ),
         "exits": {"town square": "town_square"},
         "interactions": {
             "check schedule": "The next bus isn't for hours. Even then, it only goes to the next major city.",
@@ -123,15 +253,16 @@ locations = {
         }
     },
     "pawn_shop": {
-        "description": "A dimly lit shop filled with an eclectic mix of forgotten treasures and junk. A bell chimes as you enter.",
+        "description": (
+            "A dingy little shop filled with oddities. The owner eyes you suspiciously."
+        ),
         "exits": {"town square": "town_square"},
-        "interactions": {
-            "browse items": "You see old tools, dusty electronics, and some tarnished jewelry.",
-            "sell item": "What do you want to sell?"
-        }
+        "interactions": {}
     },
     "tech_store": {
-        "description": "A small, modern storefront with a few outdated computers on display. It's usually empty.",
+        "description": (
+            "A small, modern storefront with a few outdated computers on display. It's usually empty."
+        ),
         "exits": {"town square": "town_square"},
         "interactions": {
             "browse tech": "Old laptops, basic components, and a few dusty gaming consoles. Nothing cutting edge.",
@@ -139,7 +270,9 @@ locations = {
         }
     },
     "outskirts_road": {
-        "description": "You're on the main road leading out of town. The familiar houses slowly give way to dense forest and rolling hills.",
+        "description": (
+            "You're on the main road leading out of town. The familiar houses slowly give way to dense forest and rolling hills."
+        ),
         "exits": {"town": "town_square", "neighbors bunker": "neighbors_bunker"}, # Changed front_door to town for consistency, added bunker
         "interactions": {
             "look around": "The road is quiet. You see no signs of other travelers. The sheer distance to safety becomes clear.",
@@ -147,7 +280,9 @@ locations = {
         }
     },
     "neighbors_bunker": {
-        "description": "A heavily reinforced steel door, almost invisible against the overgrown hillside. It looks impenetrable.",
+        "description": (
+            "A heavily reinforced steel door, almost invisible against the overgrown hillside. It looks impenetrable."
+        ),
         "exits": {"outskirts road": "outskirts_road"},
         "interactions": {
             "examine door": "The door is clearly designed to withstand a lot. There's a keypad, but you don't know the code.",
@@ -155,14 +290,19 @@ locations = {
         }
     },
     "burger_hut": { # NEW LOCATION for working
-        "description": "The greasy smell of frying food assaults your senses. A few bored-looking customers sit at tables.",
+        "description": (
+            "The greasy smell of frying food assaults your senses. A few bored-looking customers sit at tables."
+        ),
         "exits": {"town square": "town_square"},
         "interactions": {
             "work shift": "You put on the uniform and start flipping burgers. The hours crawl by."
         }
     },
     "military_base": {
-        "description": "A high fence topped with barbed wire surrounds a sprawling complex. Guards patrol the perimeter. A chilling sense of finality hangs in the air.",
+        "description": (
+            "A high fence topped with barbed wire surrounds a sprawling complex. Guards patrol the perimeter. "
+            "A chilling sense of finality hangs in the air."
+        ),
         "exits": {"town square": "town_square"}, # Direct exit back to town
         "interactions": {
             "examine fence": "The fence is formidable. Breaking in would be incredibly difficult and dangerous.",

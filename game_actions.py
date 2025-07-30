@@ -1,11 +1,11 @@
 # game_actions.py
 
 # Import necessary data and utilities
-from game_data import game_state, characters, locations
-from utils import print_slow, clear_screen
-import sys # Keep sys here for potential sys.exit in fatal game_action outcomes
 import time
 import random
+from game_data import game_state, locations, INVENTORY_ITEMS, TRUST_THRESHOLDS, TIME_PHASES
+from utils import print_slow, clear_screen
+from colorama import Fore, Style
 
 # --- Game State Management Functions ---
 def advance_time(hours=1, silent=False):
@@ -43,25 +43,44 @@ def advance_time(hours=1, silent=False):
 
     # Add specific time-triggered narrative events
     if game_state["time_remaining"] <= 10 and not game_state["news_warning_issued"]:
-        print_slow("\nA local radio station interrupts its regular programming with a brief, garbled message about 'unusual atmospheric disturbances'. It's subtle, but enough to send a chill down your spine.", mode='slow')
+        print_slow(
+            "\nA local radio station interrupts its regular programming with a brief, garbled message about 'unusual atmospheric disturbances'. "
+            "It's subtle, but enough to send a chill down your spine.",
+            mode='slow'
+        )
         game_state["news_warning_issued"] = True
         if "radio_warning" not in game_state["inventory"]:
             game_state["inventory"].append("radio_warning")
             print_slow("You gained a **Radio Warning** as evidence!", mode='slow')
 
     if game_state["time_remaining"] <= 5 and not game_state["military_activity_noticed"]:
-        print_slow("\nOutside, you notice increased military vehicle traffic. Humvees and supply trucks rumble through the streets. Something is definitely happening.", mode='slow')
+        print_slow(
+            "\nOutside, you notice increased military vehicle traffic. "
+            "Humvees and supply trucks rumble through the streets. "
+            "Something is definitely happening.",
+            mode='slow'
+        )
         game_state["military_activity_noticed"] = True
 
 # This display_location function should be called by menus.py to show current location info
 def display_location():
     """Displays the current location's description and available exits."""
+    from utils import create_box, create_countdown_box, colorize_location, print_slow_colored
+    
     clear_screen()
-    print_slow(f"\n--- {game_state['current_location'].replace('_', ' ').title()} ---")
-    print_slow(f"Time: {game_state['time_remaining']} hours remaining ({game_state['current_day_phase'].title()})")
-    print_slow(locations[game_state["current_location"]]["description"])
-    # Removed Exits section
-
+    
+    # Create location header box
+    location_name = game_state['current_location'].replace('_', ' ').title()
+    location_box = create_box(colorize_location(location_name))
+    print(location_box)
+    
+    # Create countdown box
+    countdown_box = create_countdown_box(game_state['time_remaining'], game_state['current_day_phase'])
+    print(countdown_box)
+    
+    # Display location description
+    print_slow_colored(locations[game_state["current_location"]]["description"], "info")
+    print()  # Extra spacing
 
 # --- Initial Event ---
 def handle_vision_event():
@@ -72,67 +91,52 @@ def handle_vision_event():
     print_slow("You look around your familiar bedroom, the morning sun streaming in.", mode='slow')
     print_slow("The peace feels like a lie.", mode='slow')
     print_slow("What do you do?", mode='slow')
+    input("Press Enter to continue...")
     time.sleep(1)
     game_state["current_location"] = "bedroom"
-
-
-# --- Path A: Tell People (initial setup) ---
-def tell_people_path_init():
-    """Initializes the 'Tell People' path. Sets location and prints intro message."""
-    print_slow("\nYou decide you have to warn them. They have to know!", mode='slow')
-    game_state["current_location"] = "town_square"
-    advance_time(1)
-    print_slow("You stand in the town square. People walk by, oblivious.", mode='slow')
-    print_slow("How do you even begin to convince them of something so unbelievable?", mode='slow')
-
-
-# --- Path B: Try to Leave Town (initial setup) ---
-def leave_town_path_init():
-    """Initializes the 'Leave Town' path. Sets location and prints intro message."""
-    print_slow("\nThis town is doomed. You need to get out, and maybe bring your friends.", mode='slow')
-    print_slow("You quickly start packing a bag, grabbing essentials. The isolation of West Virginia suddenly feels like a trap.", mode='slow')
-    game_state["current_location"] = "bedroom" # Start packing from bedroom
-    if "backpack" not in game_state["inventory"]:
-        game_state["inventory"].append("backpack")
-        print_slow("You now have a **Backpack**.", mode='slow')
-    advance_time(1)
-
 
 # --- Specific Action Functions (receive choices from menus) ---
 
 def handle_talk_parents_action(choice_num):
     """Handles specific choices when talking to parents."""
+    from utils import colorize_name, print_slow_colored
+    
     if not game_state["parents_warned"]:
         if choice_num == 1: # Tell them about the nuclear missile vision.
-            print_slow("You sit them down and explain your vision, pouring out your fear and urgency.", mode='slow')
-            print_slow("Your mom puts a hand to your forehead, concern in her eyes. 'Are you feeling alright, sweetie? You look a little feverish.'", mode='slow')
-            print_slow("Your dad suggests you've been working too hard. They clearly don't believe you.", mode='slow')
+            print_slow_colored(f"{colorize_name(game_state['protagonist_name'])} sits down and explains the vision, pouring out fear and urgency.", "character", mode='slow')
+            print_slow_colored("Your mom puts a hand to your forehead, concern in her eyes. 'Are you feeling alright, sweetie? You look a little feverish.'", "character", mode='slow')
+            print_slow_colored("Your dad suggests you've been working too hard. They clearly don't believe you.", "character", mode='slow')
             game_state["parents_warned"] = True
             print_slow("A wave of sadness washes over you. You couldn't even convince them.", mode='slow')
+            input("Press Enter to continue...")
         elif choice_num == 2: # Keep silent and talk about something else.
-            print_slow("You decide to keep your burden to yourself. 'Just checking in. Everything okay?'", mode='slow')
-            print_slow("They nod, oblivious. The conversation drifts to mundane topics.", mode='slow')
+            print_slow_colored(f"{colorize_name(game_state['protagonist_name'])} decides to keep the burden to themselves. 'Just checking in. Everything okay?'", "character", mode='slow')
+            print_slow("They nod, oblivious. The conversation drifts to mundane topics.", mode='slow', color=Fore.YELLOW)
+            input("Press Enter to continue...")
     else: # Already warned parents
         print_slow("Your parents are still going about their day. They sometimes glance at you with lingering worry.", mode='slow')
         print_slow("They haven't brought up your 'feverish' vision again.", mode='slow')
+        input("Press Enter to continue...")
     advance_time(0.5, silent=True)
 
 
 def handle_talk_alex_action(choice_num):
     """Handles specific choices when talking to Alex."""
+    from utils import colorize_name, print_slow_colored
+    
     if not game_state.get("talked_to_alex_about_vision", False):
         if choice_num == 1: # Tell him about the nuclear missile vision.
-            print_slow("You recount your terrifying vision in detail. Alex listens intently, but his expression remains analytical.", mode='slow')
+            print_slow_colored(f"You recount your terrifying vision in detail. {colorize_name('Alex')} listens intently, but his expression remains analytical.", "character", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_alex_about_vision"] = True
             if game_state["trust_alex"] >= 4:
-                print_slow("Alex nods slowly. 'That's wild... but you usually don't make things up. I'll help you look into it. What kind of proof do we need?'", mode='slow')
+                print_slow_colored(f"{colorize_name('Alex')} nods slowly. 'That's wild... but you usually don't make things up. I'll help you look into it. What kind of proof do we need?'", "character", mode='slow')
                 game_state["knowledge"] += 1
             elif game_state["trust_alex"] >= 2:
-                print_slow("Alex raises an eyebrow. 'That sounds crazy, [Protagonist Name]. Are you sure you're okay? Maybe you should get some sleep.'", mode='slow')
+                print_slow_colored(f"{colorize_name('Alex')} raises an eyebrow. 'That sounds crazy, {colorize_name(game_state['protagonist_name'])}. Are you sure you're okay? Maybe you should get some sleep.'", "character", mode='slow')
                 game_state["trust_alex"] -= 1
             else:
-                print_slow("Alex snorts. 'You're losing it, man. Stick to facts, not fantasies.' He dismisses you.", mode='slow')
+                print_slow_colored(f"{colorize_name('Alex')} snorts. 'You're losing it, {colorize_name(game_state['protagonist_name'])}. Stick to facts, not fantasies.' He dismisses you.", "character", mode='slow')
                 game_state["trust_alex"] -= 2
         elif choice_num == 2: # Ask for his research help on a hypothetical disaster.
             print_slow("You frame it as a hypothetical scenario for an article: 'If a major disaster hit, what kind of supplies would a town need? How would people evacuate?'", mode='slow')
@@ -155,22 +159,24 @@ def handle_talk_alex_action(choice_num):
 
 def handle_talk_maya_action(choice_num):
     """Handles specific choices when talking to Maya."""
+    from utils import colorize_name, print_slow_colored
+    
     if not game_state.get("talked_to_maya_about_vision", False):
         if choice_num == 1: # Confide in her about the vision.
-            print_slow("You tell Maya everything, the terrifying vision, the bomb, the short time left.", mode='slow')
+            print_slow_colored(f"{colorize_name(game_state['protagonist_name'])} tells {colorize_name('Maya')} everything, the terrifying vision, the bomb, the short time left.", "character", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_maya_about_vision"] = True
             if game_state["trust_maya"] >= 4:
-                print_slow("Her eyes widen, and her usual optimism falters. She looks genuinely scared. 'Oh my god... that's... terrifying. But I believe you. What can we even do?'", mode='slow')
+                print_slow_colored("Her eyes widen, and her usual optimism falters. She looks genuinely scared. 'Oh my god... that's... terrifying. But I believe you. What can we even do?'", "character", mode='slow')
                 game_state["trust_maya"] += 5
                 print_slow("Maya is shaken, but she believes you. Your bond with her deepens.", mode='slow')
             elif game_state["trust_maya"] >= 2:
-                print_slow("Maya's brow furrows. 'That sounds awful. Maybe it was just a really bad dream?' She's clearly concerned, but struggles to accept it.", mode='slow')
+                print_slow_colored("Maya's brow furrows. 'That sounds awful. Maybe it was just a really bad dream?' She's clearly concerned, but struggles to accept it.", "character", mode='slow')
                 game_state["trust_maya"] += 1
             else:
-                print_slow("Maya looks uncomfortable and quickly changes the subject, clearly worried about your mental state.", mode='slow')
+                print_slow_colored("Maya looks uncomfortable and quickly changes the subject, clearly worried about your mental state.", "character", mode='slow')
         elif choice_num == 2: # Talk about art or other light topics.
-            print_slow("You talk about her sketches and the latest school gossip. Maya seems happy for the distraction.", mode='slow')
+            print_slow(f"{game_state['protagonist_name']} talks about her sketches and the latest school gossip. Maya seems happy for the distraction.", mode='slow')
             game_state["trust_maya"] += 0.5
             print_slow("You feel slightly more connected with Maya.")
     else:
@@ -184,31 +190,42 @@ def handle_talk_maya_action(choice_num):
 
 def handle_talk_ben_action(choice_num):
     """Handles specific choices when talking to Ben."""
+    from utils import colorize_name, print_slow_colored
+    
     if not game_state.get("talked_to_ben_about_vision", False):
         if choice_num == 1: # Tell him about the nuclear missile vision.
-            print_slow("You tell Ben about the nuclear missile vision, emphasizing the urgency and practical implications.", mode='slow')
+            print_slow_colored(f"{colorize_name(game_state['protagonist_name'])} tells {colorize_name('Ben')} about the nuclear missile vision, emphasizing the urgency and practical implications.", "character", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_ben_about_vision"] = True
             if game_state["trust_ben"] >= 4:
-                print_slow("Ben's eyes narrow, considering. 'That's heavy... but if it's true, we need supplies. A place to go. What's the plan?'", mode='slow')
+                print_slow_colored(f"{colorize_name('Ben')}'s eyes narrow, considering. 'That's heavy... but if it's true, we need supplies. A place to go. What's the plan?'", "character", mode='slow')
                 game_state["trust_ben"] += 10
                 game_state["knowledge"] += 1
                 game_state["inventory"].append("survival_checklist")
-                print_slow("Ben starts listing things: 'Water, non-perishables, a map, maybe a working vehicle...' You gained **Survival Checklist**.", mode='slow')
+                print_slow_colored("Ben starts listing things: 'Water, non-perishables, a map, maybe a working vehicle...' You gained **Survival Checklist**.", "item", mode='slow')
             elif game_state["trust_ben"] >= 2:
-                print_slow("Ben looks uncomfortable. 'Look, I'm not really good with... hypothetical apocalypses. What's the actual problem?' He tries to change the subject.", mode='slow')
+                print_slow_colored(f"{colorize_name('Ben')} looks uncomfortable. 'Look, I'm not really good with... hypothetical apocalypses. What's the actual problem, {colorize_name(game_state['protagonist_name'])}?' He tries to change the subject.", "character", mode='slow')
                 game_state["trust_ben"] -= 1
             else:
-                print_slow("Ben shakes his head. 'Sounds like a bad acid trip, man. You okay?' He dismisses your story completely.", mode='slow')
+                print_slow_colored(f"{colorize_name('Ben')} shakes his head. 'Sounds like a bad acid trip, {colorize_name(game_state['protagonist_name'])}. You okay?' He dismisses your story completely.", "character", mode='slow')
                 game_state["trust_ben"] -= 2
         elif choice_num == 2: # Ask him for help with something practical (e.g., getting supplies).
-            print_slow("You ask Ben: 'I need to get out of here, or get some serious supplies. You know this town better than anyone. Any ideas?'", mode='slow')
-            print_slow("Ben taps his chin. 'Hmm. A truck with no gas... that's a problem.' He pauses. 'I might know where some spare fuel cans are. And old Mr. Henderson's truck always has the keys in it.'", mode='slow')
+            print_slow(f"{game_state['protagonist_name']} asks Ben: 'I need to get out of here, or get some serious supplies. You know this town better than anyone. Any ideas?'", mode='slow')
+            print_slow(
+                "Ben taps his chin. 'Hmm. A truck with no gas... that's a problem.' "
+                "He pauses. 'I might know where some spare fuel cans are. "
+                "And old Mr. Henderson's truck always has the keys in it.'",
+                mode='slow'
+            )
             game_state["trust_ben"] += 5
             game_state["inventory"].append("tip_henderson_truck")
-            print_slow("Ben offers to help you find gas for a vehicle! Your **trust with Ben** improves significantly. You gained a **Tip about Mr. Henderson's Truck**.", mode='slow')
+            print_slow(
+                "Ben offers to help you find gas for a vehicle! Your **trust with Ben** improves significantly. "
+                "You gained a **Tip about Mr. Henderson's Truck**.",
+                mode='slow'
+            )
         elif choice_num == 3: # Talk about his radio projects.
-            print_slow("You talk about his current radio project. He passionately explains frequencies and circuits, a welcome distraction.", mode='slow')
+            print_slow(f"{game_state['protagonist_name']} talks about Ben's current radio project. He passionately explains frequencies and circuits, a welcome distraction.", mode='slow')
             game_state["trust_ben"] += 1
             print_slow("Ben seems to appreciate your interest.")
     else: # If Ben has already been told the vision
@@ -220,24 +237,32 @@ def handle_talk_ben_action(choice_num):
             print_slow("Ben avoids eye contact and finds an excuse to fiddle with his radio, clearly uncomfortable with you.", mode='slow')
     advance_time(0.5, silent=True)
 
+def print_jake_post_vision_dialogue():
+    """Prints Jake's reaction after the vision has been shared, depending on his trust level."""
+    if game_state["trust_jake"] >= 5:
+        print_slow("Jake looks agitated. 'Still nothing concrete? We need to do something, pronto!'")
+    else:
+        print_slow("Jake avoids eye contact, mumbling something about being busy. He doesn't want to talk about your 'crazy' vision.")
+
 def handle_talk_jake_action(choice_num):
     """Handles specific choices when talking to Jake."""
     if game_state["trust_jake"] < 3 and not game_state.get("talked_to_jake_about_vision", False):
-        print_slow("Jake just glares at you. 'What do you want, loser?' He doesn't seem interested in talking.")
+        print_slow(f"Jake just glares at {game_state['protagonist_name']}. 'What do you want, loser?' He doesn't seem interested in talking.")
+        input("Press Enter to continue...")
     elif not game_state.get("talked_to_jake_about_vision", False):
         if choice_num == 1: # Tell him about the vision (carefully).
-            print_slow("You briefly and gravely tell him about the impending doom, trying to appeal to any hidden survival instinct.")
+            print_slow(f"You briefly and gravely tell him about the impending doom, trying to appeal to any hidden survival instinct.")
             game_state["talked_to_jake_about_vision"] = True
             if game_state["trust_jake"] >= 5:
-                print_slow("Jake's tough facade cracks, a flicker of fear in his eyes. 'You're serious? Fine. If you need muscle, I'm in.'")
+                print_slow(f"Jake's tough facade cracks, a flicker of fear in his eyes. 'You're serious? Fine. If you need muscle, I'm in.'")
                 game_state["trust_jake"] += 10
                 game_state["mob_of_civilians"] = True
                 print_slow("Jake seems to take you seriously, and you feel like he could help you rally others.")
             elif game_state["trust_jake"] >= 3:
-                print_slow("Jake laughs, but it sounds forced. 'A bomb? You're crazy, man.' He shakes his head, but he doesn't walk away immediately.")
+                print_slow(f"Jake laughs, but it sounds forced. 'A bomb? You're crazy, {game_state['protagonist_name']}.' He shakes his head, but he doesn't walk away immediately.")
                 game_state["trust_jake"] -= 1
             else:
-                print_slow("Jake scoffs. 'And I thought *I* was messed up. Get lost.' He pushes you slightly.")
+                print_slow(f"Jake scoffs. 'And I thought *I* was messed up. Get lost.' He pushes you slightly.")
                 game_state["trust_jake"] -= 2
         elif choice_num == 2: # Ask for a favor (e.g., getting past someone, intimidating someone).
             print_slow("You ask him to 'handle' a minor obstacle (e.g., distract someone, 'convince' someone to move).")
@@ -255,10 +280,7 @@ def handle_talk_jake_action(choice_num):
                 print_slow("Jake seems surprised, a flicker of respect in his eyes. 'Whoa, feisty today. Watch it.'")
                 game_state["trust_jake"] += 1
     else: # If Jake has already been told the vision
-        if game_state["trust_jake"] >= 5:
-            print_slow("Jake looks agitated. 'Still nothing concrete? We need to do something, pronto!'")
-        else:
-            print_slow("Jake avoids eye contact, mumbling something about being busy. He doesn't want to talk about your 'crazy' vision.")
+        print_jake_post_vision_dialogue()
     advance_time(0.5, silent=True)
 
 
@@ -270,13 +292,23 @@ def handle_town_hall_interaction_action(choice_num):
             evidence_found = True
 
         if game_state["knowledge"] >= 5 and evidence_found:
-            print_slow("You present your evidence, explaining it with compelling knowledge. The mayor is called in, and his face goes pale as he reviews your proof. 'This... this is serious. We'll begin evacuation procedures immediately.'")
+            print_slow(
+                "You present your evidence, explaining it with compelling knowledge. The mayor is called in, "
+                "and his face goes pale as he reviews your proof. 'This... this is serious. "
+                "We'll begin evacuation procedures immediately.'",
+                mode='slow'
+            )
             game_state["authority_of_town"] += 5
             game_state["mayor_warned"] = True
             print_slow("The Mayor is convinced! You gained significant **Authority of Town**.")
         else:
-            print_slow("You have nothing convincing to show or lack the knowledge to present it effectively. The mayor is not impressed.")
-            print_slow("You're quickly escorted out. Your warnings fall on deaf ears.")
+            print_slow(
+                "You have nothing convincing to show or lack the knowledge to present it effectively. "
+                "The mayor is not impressed."
+            )
+            print_slow(
+                "You're quickly escorted out. Your warnings fall on deaf ears."
+            )
             game_state["authority_of_town"] -= 1
             game_state["current_location"] = "town_square"
     elif choice_num == 2: # Try to explain the urgency to the secretary.
@@ -293,15 +325,27 @@ def handle_town_hall_interaction_action(choice_num):
 
 def handle_computer_use_action(choice_num):
     """Handles specific choices when using the computer."""
+    # Give backpack the first time the computer is used
+    if "backpack" not in game_state["inventory"]:
+        print_slow("You notice your old **Backpack** slung over the back of your computer chair. This will help you carry more supplies!")
+        game_state["inventory"].append("backpack")
     if choice_num == 1: # Search for 'nuclear threat' or 'impending doom'.
-        print_slow("You search for global nuclear threats. The results are overwhelming, but nothing points specifically to your town. It makes the world seem too big, your vision too small.")
+        print_slow(
+            "You search for global nuclear threats. The results are overwhelming, but nothing points specifically to your town. "
+            "It makes the world seem too big, your vision too small."
+        )
         game_state["knowledge"] += 1
-        print_slow("You gain a little **Knowledge**, but no direct answers for your local situation.")
+        print_slow("You feel a little more prepared.")
         advance_time(1)
     elif choice_num == 2: # Look for unusual local news reports.
-        print_slow("You comb through local news archives. You find a few strange reports: unexplained seismic activity, odd military transport sightings on obscure backroads.")
+        print_slow(
+            "You comb through local news archives. You find a few strange reports: unexplained seismic activity, "
+            "odd military transport sightings on obscure backroads."
+        )
         game_state["knowledge"] += 2
-        print_slow("You've found some unsettling local **Knowledge**, enough to make you more confident your vision wasn't just a dream.")
+        print_slow(
+            "You've found some unsettling local **Knowledge**, enough to make you more confident your vision wasn't just a dream."
+        )
         advance_time(1)
     elif choice_num == 3: # Check for survival guides or emergency bunkers.
         print_slow("You search for guides on surviving an apocalypse and local private bunkers.")
@@ -313,13 +357,18 @@ def handle_computer_use_action(choice_num):
                 found_rumor = True
         if found_rumor:
             if "bunker_rumor" not in game_state["inventory"]:
-                print_slow("You stumble upon an old, obscure forum post mentioning a well-hidden local bunker, possibly your neighbor's. It gives vague directions.")
+                print_slow(
+                    "You stumble upon an old, obscure forum post mentioning a well-hidden local bunker, possibly your neighbor's. "
+                    "It gives vague directions."
+                )
                 game_state["inventory"].append("bunker_rumor")
-                print_slow("You gain **Knowledge** about local survival tactics and a **Rumor about a Neighbor's Bunker**.")
+                print_slow(
+                    "You gain **Knowledge** about local survival tactics and a **Rumor about a Neighbor's Bunker**."
+                )
             else:
                 print_slow("You recall the rumor you already found about a neighbor's bunker. No new details emerge.")
         else:
-            print_slow("You find some generic survival tips, but nothing about local bunkers. Maybe with more knowledge, you could dig deeper.")
+            print_slow("You find some generic survival tips, but nothing specific to your town.")
         advance_time(1)
     elif choice_num == 4: # Stop using the computer.
         print_slow("You close the computer, feeling a mix of dread and growing certainty.")
@@ -330,7 +379,7 @@ def handle_computer_use_action(choice_num):
 
 def handle_shout_warning():
     """Handles the 'warn openly' action."""
-    print_slow("You take a deep breath and scream, 'A BOMB IS COMING! WE NEED TO EVACUATE!'")
+    print_slow(f"You take a deep breath and scream, 'A BOMB IS COMING! WE NEED TO EVACUATE!'")
     if game_state["authority_of_town"] >= 3:
         print_slow("A few people stop, looking startled. Some begin murmuring, a seed of doubt planted. The crowd begins to swell slightly.")
         game_state["mob_of_civilians"] = True
@@ -348,7 +397,7 @@ def handle_seek_transport_action(choice_num):
     """Handles specific choices for seeking transport."""
     if choice_num == 1: # Look for Mr. Henderson's truck (near Outskirts Road).
         game_state["current_location"] = "outskirts_road"
-        print_slow("You head towards the outskirts, remembering Mr. Henderson's beat-up truck.")
+        print_slow(f"You head towards the outskirts, remembering Mr. Henderson's beat-up truck.")
         advance_time(0.5)
         if not game_state["has_car_keys"]:
             print_slow("You spot Mr. Henderson's old truck! The keys are in the ignition, as always. But the gas tank is almost empty.")
@@ -359,7 +408,7 @@ def handle_seek_transport_action(choice_num):
             print_slow("You're back at Mr. Henderson's truck. The gas tank is still empty. You still need gas for it.")
     elif choice_num == 2: # Go to the Bus Stop.
         game_state["current_location"] = "bus_stop"
-        print_slow("You make your way to the bus stop, hoping for a quick departure.")
+        print_slow(f"You make your way to the bus stop, hoping for a quick departure.")
         advance_time(0.5)
     elif choice_num == 3: # Go back.
         print_slow("You decide to rethink your transport options.")
@@ -370,13 +419,13 @@ def handle_gather_supplies_action(choice_num):
     """Handles specific choices for gathering supplies."""
     if choice_num == 1: # Go to the General Store (buy or steal).
         game_state["current_location"] = "general_store"
-        print_slow("You head to the General Store.")
+        print_slow(f"You head to the General Store.")
     elif choice_num == 2: # Go to Burger Hut (earn cash).
         game_state["current_location"] = "burger_hut"
-        print_slow("You head to the Burger Hut.")
+        print_slow(f"You head to the Burger Hut.")
     elif choice_num == 3: # Search for items at Home.
         game_state["current_location"] = "bedroom" # Setting location for search_home_menu
-        print_slow("You head back home to search.")
+        print_slow(f"You head back home to search.")
     elif choice_num == 4: # Go back.
         print_slow("You decide to rethink gathering supplies.")
         advance_time(0.1, silent=True)
@@ -386,11 +435,11 @@ def handle_involve_friends_escape_action(choice_num):
     """Handles specific choices for involving friends in escape."""
     if choice_num == 1: # Go to the Newspaper Club (Talk to friends).
         game_state["current_location"] = "newspaper_club"
-        print_slow("You head to the Newspaper Club.")
+        print_slow(f"You head to the Newspaper Club.")
     elif choice_num == 2: # Seek access to the Neighbor's Bunker (if you know about it).
         if "bunker_rumor" in game_state["inventory"]:
             game_state["current_location"] = "neighbors_bunker"
-            print_slow("You head towards the neighbor's bunker.")
+            print_slow(f"You head towards the neighbor's bunker.")
         else:
             print_slow("You don't know enough about a neighbor's bunker to seek it out. Maybe try researching it first?")
             advance_time(0.1, silent=True)
@@ -404,7 +453,10 @@ def handle_general_store_interaction_action(choice_num):
 
     if choice_num == 1: # Try to buy supplies (e.g., food, gas).
         if game_state["cash"] >= cash_unit_cost: # Check if player has enough cash units
-            print_slow(f"You buy some canned food and a small gas can for {cash_unit_cost} cash unit(s). Mr. Jenkins grunts, taking your money.")
+            print_slow(
+                f"You buy some canned food and a small gas can for {cash_unit_cost} cash unit(s). "
+                "Mr. Jenkins grunts, taking your money."
+            )
             game_state["cash"] -= cash_unit_cost # Deduct cash unit
             game_state["inventory"].append("canned_food")
             if "gas_can" not in game_state["inventory"]:
@@ -414,7 +466,10 @@ def handle_general_store_interaction_action(choice_num):
             else:
                 print_slow("You now have **Canned Food**.")
         else:
-            print_slow(f"You don't have enough cash for anything useful. You have {game_state['cash']} cash unit(s), but need {cash_unit_cost}.")
+            print_slow(
+                f"You don't have enough cash for anything useful. You have {game_state['cash']} cash unit(s), "
+                f"but need {cash_unit_cost}."
+            )
     elif choice_num == 2: # Attempt to steal supplies.
         print_slow("You eye a small gas can. Attempt to steal it?")
         return "steal_sub_menu" # Signal to menus.py to show sub-menu
@@ -433,12 +488,14 @@ def handle_general_store_interaction_action(choice_num):
 def handle_jake_favor_action():
     """Handles asking Jake for a favor, after he owes one."""
     if game_state.get("jake_owed_favor", False):
-        print_slow("You approach Jake. 'Remember that favor you owe me?'")
+        print_slow(f"You approach {game_state['protagonist_name']}. 'Remember that favor you owe me?'")
         print_slow("Jake grunts. 'Yeah, yeah. What do you need?'")
         # Give a specific useful item as a favor
         if game_state["cash"] < 1:
             print_slow("You ask him to 'acquire' some cash for you.")
-            print_slow("Jake nods, disappears for a bit, and returns with a single cash unit, looking smug. 'Don't ask where I got it.'")
+            print_slow("Jake nods, disappears for a bit, and returns with a single cash unit, looking smug. "
+                       "'Don't ask where I got it.'"
+            )
             game_state["cash"] += 1
             print_slow("You gained **1 Cash Unit**!")
         elif game_state["inventory"].count("supplies") < 2:
@@ -462,16 +519,20 @@ def handle_jake_favor_action():
 
 def handle_steal_general_store_action(sub_choice_num):
     """Handles the nested choice for stealing from general store."""
+    has_backpack = "backpack" in game_state["inventory"]
+    success_chance = 0.65 if has_backpack else 0.35
     if sub_choice_num == 1: # Yes, try to steal.
-        if "backpack" in game_state["inventory"] and game_state["knowledge"] >= 2:
-            print_slow("You expertly slip the **Gas Can** into your **backpack** when Mr. Jenkins isn't looking.")
+        if random.random() < success_chance:
+            print_slow(
+                f"You expertly slip the **Gas Can** into your {'backpack' if has_backpack else 'jacket'} "
+                "when Mr. Jenkins isn't looking."
+            )
             if "gas_can" not in game_state["inventory"]:
                 game_state["inventory"].append("gas_can")
             game_state["car_gas"] += 50
             print_slow("You gained a **Gas Can**!")
         else:
-            print_slow("You fumble, and Mr. Jenkins' eyes snap to you. 'Get out of my store, you thief!'")
-            print_slow("He shoves you out the door. You've made an enemy.")
+            print_slow("You fumble, and Mr. Jenkins' eyes snap to you. 'Get out of my store, you thief!' He shoves you out the door. You've made an enemy.")
             game_state["ending_achieved"] = "Jailed"
     elif sub_choice_num == 2: # No, it's too risky.
         print_slow("You decide against stealing. It's not worth the risk.")
@@ -480,13 +541,15 @@ def handle_steal_general_store_action(sub_choice_num):
 
 def handle_burger_hut_work_action(choice_str):
     """Handles the actual working action at Burger Hut."""
+    from utils import colorize_money, print_slow_colored
+    
     cash_earned = 1 # One cash unit earned per shift
     if choice_str == "yes":
         if game_state["time_remaining"] >= 4:
             print_slow("You spend four grueling hours flipping burgers and dealing with customers.")
             game_state["cash"] += cash_earned
             advance_time(4)
-            print_slow(f"You earned **{cash_earned} Cash Unit(s)**!")
+            print_slow_colored(f"You earned {colorize_money(f'**{cash_earned} Cash Unit(s)**')}!", "success")
         else:
             print_slow("You don't have enough time left for a full shift.")
             print_slow("You leave the Burger Hut feeling frustrated.")
@@ -499,8 +562,12 @@ def handle_burger_hut_work_action(choice_str):
 def handle_go_to_class_action():
     """Handles the 'go to class' action from school."""
     if not game_state["has_attended_class"]: # NEW: Check if class already attended
-        print_slow("You attend a class. It's hard to focus with the weight of the vision.")
-        game_state["knowledge"] += 1
+        print_slow(f"You attend a class. It's hard to focus with the weight of the vision.")
+        knowledge_gain = 1
+        if "notebook" in game_state["inventory"]:
+            knowledge_gain += 1
+            print_slow("Your notebook helps you take better notes and understand more. (+1 Knowledge)", color=Fore.CYAN)
+        game_state["knowledge"] += knowledge_gain
         advance_time(2)
         game_state["has_attended_class"] = True # NEW: Set flag after attending
         print_slow("You feel slightly more informed, but less calm.")
@@ -521,27 +588,7 @@ def handle_go_to_class_action():
         advance_time(0.1, silent=True) # Small time cost for trying again
 
 
-def handle_search_home_action(choice_num):
-    """Handles specific choices for searching home."""
-    if choice_num == 1: # Search your desk in the bedroom.
-        if "notebook" not in game_state["inventory"]:
-            print_slow("You rummage through your desk. Hidden beneath some textbooks, you find a small, unused **Notebook** and a pen.")
-            game_state["inventory"].append("notebook")
-            print_slow("You got a **Notebook**!")
-        else:
-            print_slow("Your desk is still a mess, but you've already found what you needed.")
-    elif choice_num == 2: # Look in the kitchen for supplies.
-        if "emergency_kit" not in game_state["inventory"]:
-            print_slow("You check the pantry and under the sink. You find a small, dusty emergency kit with some bandages and water purification tablets.")
-            game_state["inventory"].append("emergency_kit")
-            game_state["inventory"].append("supplies")
-            game_state["inventory"].append("supplies") # Adding another for more weight to 'supplies' count
-            print_slow("You found an **Emergency Kit** and some **Supplies**!")
-        else:
-            print_slow("The kitchen is mostly normal. You've already grabbed the emergency kit.")
-    elif choice_num == 3: # Go back.
-        print_slow("You stop searching and consider other options.")
-    advance_time(0.5)
+
 
 
 def handle_bunker_access_action(action_type):
@@ -553,7 +600,10 @@ def handle_bunker_access_action(action_type):
         if not game_state["bunker_unlocked"]:
             print_slow(locations["neighbors_bunker"]["interactions"]["knock"])
             if "bunker_rumor" in game_state["inventory"] and game_state["trust_ben"] >= 10:
-                print_slow("Recalling Ben's tip, you try the code he mentioned. There's a click and a hiss as the heavy door swings open.")
+                print_slow(
+                    "Recalling Ben's tip, you try the code he mentioned. There's a click and a hiss as the heavy door "
+                    "swings open."
+                )
                 game_state["bunker_unlocked"] = True
                 print_slow("The **Neighbor's Bunker** is now unlocked!")
             else:
@@ -582,32 +632,51 @@ def handle_military_base_approach_action(choice_num):
     """Handles specific choices for approaching the military base."""
     # NEW: Check for failed public warning first, only if trying to approach or sneak/use authority
     if game_state["failed_public_warning"] and choice_num in [1, 2]: # If they try to sneak or use authority after failing publicly
-        print_slow("Your previous chaotic public warnings have been noted by authorities. As you approach the base, you're immediately recognized and apprehended.")
+        print_slow(
+            "Your previous chaotic public warnings have been noted by authorities. As you approach the base, "
+            "you're immediately recognized and apprehended."
+        )
         game_state["ending_achieved"] = "Jailed"
         advance_time(0.5)
         return # End action here, immediately to Jailed ending
 
     if choice_num == 1: # Attempt to Sneak In.
-        print_slow("You try to find a weak point in the perimeter fence, looking for cameras or patrols.")
+        print_slow(
+            "You try to find a weak point in the perimeter fence, looking for cameras or patrols."
+        )
         if game_state["knowledge"] >= 3 and game_state["tech_parts"] >= 1:
-            print_slow("Using your knowledge of security systems and a few **Tech Parts**, you disable a camera and slip through a blind spot.")
+            print_slow(
+                "Using your knowledge of security systems and a few **Tech Parts**, you disable a camera and slip through a blind spot."
+            )
             game_state["military_base_accessed"] = True
             game_state["current_location"] = "military_base"
             print_slow("You are inside the **Military Base**!")
         else:
-            print_slow("You can't find a way in without being spotted. A guard dog barks, and you hear shouts.")
-            print_slow("Alarms blare! You are quickly apprehended.")
+            print_slow(
+                "You can't find a way in without being spotted. A guard dog barks, and you hear shouts."
+            )
+            print_slow(
+                "Alarms blare! You are quickly apprehended."
+            )
             game_state["ending_achieved"] = "Jailed"
     elif choice_num == 2: # Try to Use Authority to Get In (if you have it).
         if game_state["authority_of_town"] >= 5:
-            print_slow("You boldly approach the main gate, flashing your credentials or leveraging your influence.")
-            print_slow("The guard hesitates, then waves you through. Your authority is recognized.")
+            print_slow(
+                "You boldly approach the main gate, flashing your credentials or leveraging your influence."
+            )
+            print_slow(
+                "The guard hesitates, then waves you through. Your authority is recognized."
+            )
             game_state["military_base_accessed"] = True
             game_state["current_location"] = "military_base"
             print_slow("You are inside the **Military Base**!")
         else:
-            print_slow("You try to assert authority, but the guard just stares blankly. 'Beat it, kid. Civilians aren't allowed here.'")
-            print_slow("He gestures firmly with his rifle. You quickly back away.")
+            print_slow(
+                "You try to assert authority, but the guard just stares blankly. 'Beat it, kid. Civilians aren't allowed here.'"
+            )
+            print_slow(
+                "He gestures firmly with his rifle. You quickly back away."
+            )
     elif choice_num == 3: # Go back to Town Square.
         print_slow("You decide to rethink your approach to the military base and head back to town.")
         game_state["current_location"] = "town_square"
@@ -617,34 +686,55 @@ def handle_military_base_approach_action(choice_num):
 def handle_military_base_action(choice_num):
     """Handles actions taken while inside the military base."""
     if choice_num == 1: # Search for the Laser Control Room.
-        print_slow("You navigate through corridors, looking for signs to a 'Laser Control' or 'Satellite Operations' room.")
+        print_slow(
+            "You navigate through corridors, looking for signs to a 'Laser Control' or 'Satellite Operations' room."
+        )
         if game_state["knowledge"] >= 5:
-            print_slow("Your extensive research pays off. You find a heavily secured door marked 'Orbital Defense Control'.")
+            print_slow(
+                "Your extensive research pays off. You find a heavily secured door marked 'Orbital Defense Control'."
+            )
             handle_laser_activation() # This specific critical action has its own input loop
         else:
-            print_slow("The base is a maze. You get lost, wasting precious time. Footsteps echo nearby.")
+            print_slow(
+                "The base is a maze. You get lost, wasting precious time. Footsteps echo nearby."
+            )
             advance_time(1)
             if game_state["time_remaining"] <= 0:
                 game_state["ending_achieved"] = "Time's Up"
         if game_state["time_remaining"] <= 5 and not game_state["ending_achieved"]:
-            print_slow("A patrol spots you! 'Intruder alert!'")
+            print_slow(
+                "A patrol spots you! 'Intruder alert!'"
+            )
             game_state["ending_achieved"] = "Jailed"
 
     elif choice_num == 2: # Look for military personnel to convince.
-        print_slow("You encounter a lone technician. Do you try to convince them?")
+        print_slow(
+            "You encounter a lone technician. Do you try to convince them?"
+        )
         if game_state["authority_of_town"] >= 7 and game_state["knowledge"] >= 4:
-            print_slow("You quickly explain the situation, backing it up with compelling data. The technician looks shocked, then determined. 'My God... you're right! I'll help you!'")
+            print_slow(
+                "You quickly explain the situation, backing it up with compelling data. The technician looks shocked, "
+                "then determined. 'My God... you're right! I'll help you!'"
+            )
             handle_laser_activation() # Directly to laser activation
         else:
-            print_slow("You try to explain, but the technician just stares, then presses an alarm button. 'Intruder!'")
+            print_slow(
+                "You try to explain, but the technician just stares, then presses an alarm button. 'Intruder!'"
+            )
             game_state["ending_achieved"] = "Jailed"
     elif choice_num == 3: # Attempt to use a computer terminal.
-        print_slow("You find an unsecured computer terminal. Can you access anything useful?")
+        print_slow(
+            "You find an unsecured computer terminal. Can you access anything useful?"
+        )
         if game_state["knowledge"] >= 6 and game_state["tech_parts"] >= 2:
-            print_slow("You quickly hack into the system using your technical skills and parts. You gain access to critical missile trajectory data and laser controls!")
+            print_slow(
+                "You quickly hack into the system using your technical skills and parts. You gain access to critical missile trajectory data and laser controls!"
+            )
             handle_laser_activation() # Directly to laser activation
         else:
-            print_slow("The terminal is locked, or your skills aren't enough. You trigger an alert trying to bypass the security.")
+            print_slow(
+                "The terminal is locked, or your skills aren't enough. You trigger an alert trying to bypass the security."
+            )
             game_state["ending_achieved"] = "Jailed"
     elif choice_num == 4: # Give up and try to escape the base.
         handle_escape_base_attempt()
@@ -663,8 +753,13 @@ def handle_laser_activation():
 
     if choice == "1":
         if game_state["knowledge"] >= 7: # Very high knowledge required for precision
-            print_slow("With trembling hands, you input the coordinates and arm the laser. A brilliant beam of light shoots into the sky.")
-            print_slow("Moments later, a distant explosion lights up the horizon, followed by absolute silence.")
+            print_slow(
+                "With trembling hands, you input the coordinates and arm the laser. "
+                "A brilliant beam of light shoots into the sky."
+            )
+            print_slow(
+                "Moments later, a distant explosion lights up the horizon, followed by absolute silence."
+            )
             print_slow("The missile is destroyed. You saved them all.")
             game_state["ending_achieved"] = "Missile Destroyed"
         else:
@@ -673,7 +768,9 @@ def handle_laser_activation():
             game_state["ending_achieved"] = "Time's Up"
     elif choice == "2":
         print_slow("You realize the task is too daunting, or too late. You turn away from the controls.")
-        print_slow("The countdown hits zero. The world goes silent, then black.")
+        print_slow(
+            "The countdown hits zero. The world goes silent, then black."
+        )
         game_state["ending_achieved"] = "Time's Up"
     else:
         print_slow("Invalid choice. The clock ticks louder.")
@@ -683,7 +780,9 @@ def handle_laser_activation():
 def handle_escape_base_attempt():
     print_slow("You try to sneak out of the military base.")
     if game_state["knowledge"] >= 4 and "backpack" in game_state["inventory"]:
-        print_slow("Using your knowledge of the base layout and your cunning, you manage to find a hidden exit.")
+        print_slow(
+            "Using your knowledge of the base layout and your cunning, you manage to find a hidden exit."
+        )
         game_state["current_location"] = "outskirts_road"
         print_slow("You made it out! But the missile is still a threat, and time is running out to escape.")
     else:
@@ -696,13 +795,21 @@ def handle_escape_base_attempt():
 # --- Inventory Display ---
 def display_inventory():
     """Displays the player's current inventory."""
+    from utils import colorize_item, print_colored, create_box
+    
     clear_screen()
+    
+    # Create inventory header box
+    inventory_box = create_box("🎒 INVENTORY")
+    print(inventory_box)
+    
     if not game_state["inventory"]:
-        print_slow("Your inventory is empty.")
+        print_colored("Your inventory is empty.", "warning")
     else:
-        print_slow("You are carrying:")
-        # Using a simple list comprehension to format and print items
-        [print(f"- {item.replace('_', ' ').title()}") for item in game_state["inventory"]]
+        print_colored("You are carrying:", "info")
+        for item in game_state["inventory"]:
+            print_colored(f"• {colorize_item(item.replace('_', ' ').title())}", "inventory")
+    
     print("-" * 30)
     input("Press Enter to continue...")
     advance_time(0.1, silent=True)
@@ -711,76 +818,118 @@ def display_inventory():
 # --- Ending Functions (called by main_menu_loop when ending_achieved is set) ---
 # These functions should ONLY print the narrative.
 def handle_allies_escape_ending():
-    print_slow("--- Ending Achieved: Allies Escape ---")
-    print_slow("Against all odds, you convinced your friends and family. Together, you boarded the last bus or sealed yourselves in the bunker.")
-    print_slow("The world outside might be ending, but you face it with those you love. A new, uncertain future awaits, but not alone.")
-    print_slow("This is just the beginning of your struggle for survival, together.")
+    print_slow("--- Ending Achieved: Allies Escape ---", color=Fore.RED)
+    print_slow(
+        "Against all odds, you convinced your friends and family. Together, you boarded the last bus or "
+        "sealed yourselves in the bunker.", color=Fore.RED
+    )
+    print_slow(
+        "The world outside might be ending, but you face it with those you love. A new, uncertain future awaits, "
+        "but not alone.", color=Fore.RED
+    )
+    print_slow("This is just the beginning of your struggle for survival, together.", color=Fore.RED)
+    input("\nPress Enter to continue...")
 
 def handle_solo_escape_ending():
-    print_slow("--- Ending Achieved: Solo Escape ---")
-    print_slow("You made it out. Whether on the last bus or deep within the bunker, you are safe from the initial blast.")
-    print_slow("The silence is deafening, punctuated only by the distant rumble. You're alive, but utterly alone. The weight of survival rests entirely on your shoulders.")
-    print_slow("This new world is a desolate place, but you have a chance to carve out a new existence.")
+    print_slow("--- Ending Achieved: Solo Escape ---", color=Fore.RED)
+    print_slow("You made it out. Whether on the last bus or deep within the bunker, you are safe from the initial blast.", color=Fore.RED)
+    print_slow(
+        "The silence is deafening, punctuated only by the distant rumble. You're alive, but utterly alone. "
+        "The weight of survival rests entirely on your shoulders.", color=Fore.RED
+    )
+    print_slow("This new world is a desolate place, but you have a chance to carve out a new existence.", color=Fore.RED)
+    input("\nPress Enter to continue...")
 
 def handle_town_evacuated_ending():
-    print_slow("--- Ending Achieved: Town Evacuated ---")
-    print_slow("Through sheer force of will and undeniable evidence, you rallied the town. The Mayor finally acted, and the buses left just in time.")
-    print_slow("Chaos gave way to organized departure. The town is empty, but its people are safe, scattered but alive, thanks to you.")
-    print_slow("You watch the last bus disappear over the horizon, a bittersweet victory. Your town is gone, but its spirit lives on through its people.")
+    print_slow("--- Ending Achieved: Town Evacuated ---", color=Fore.RED)
+    print_slow(
+        "Through sheer force of will and undeniable evidence, you rallied the town. The Mayor finally acted, "
+        "and the buses left just in time.", color=Fore.RED
+    )
+    print_slow(
+        "Chaos gave way to organized departure. The town is empty, but its people are safe, scattered but alive, "
+        "thanks to you.", color=Fore.RED
+    )
+    print_slow(
+        "You watch the last bus disappear over the horizon, a bittersweet victory. Your town is gone, but its "
+        "spirit lives on through its people.", color=Fore.RED
+    )
+    input("\nPress Enter to continue...")
 
 def handle_missile_destroyed_ending():
-    print_slow("--- Ending Achieved: Missile Destroyed ---")
-    print_slow("You infiltrated the military base, outwitted the security, and operated the legendary satellite laser. A blinding flash in the sky confirms your success.")
-    print_slow("The missile is gone. The threat is averted. The world is safe, oblivious to how close it came to oblivion, or who saved it.")
-    print_slow("You stand, exhausted but triumphant, the silent protector of humanity. Your vision was a warning, and you answered it.")
+    # Rainbow effect for the missile destroyed ending
+    rainbow = [Fore.RED, Fore.YELLOW, Fore.GREEN, Fore.CYAN, Fore.BLUE, Fore.MAGENTA]
+    lines = [
+        "--- Ending Achieved: Missile Destroyed ---",
+        "You infiltrated the military base, outwitted the security, and operated the legendary satellite laser. "
+        "A blinding flash in the sky confirms your success.",
+        "The missile is gone. The threat is averted. The world is safe, oblivious to how close it came to oblivion, "
+        "or who saved it.",
+        "You stand, exhausted but triumphant, the silent protector of humanity. Your vision was a warning, and you answered it."
+    ]
+    for i, line in enumerate(lines):
+        print_slow(line, color=rainbow[i % len(rainbow)])
+    input("\nPress Enter to continue...")
 
 # These are specific ending messages that will be called from menus.py
 def handle_time_up_ending():
-    print_slow("\n--- Ending Achieved: Time's Up ---")
-    print_slow("The sky darkens. A distant rumble grows louder, then deafening.")
-    print_slow("There's nowhere left to run. The vision was true.")
-    print_slow("...")
-    print_slow("The end.")
+    print_slow("\n--- Ending Achieved: Time's Up ---", color=Fore.RED)
+    print_slow("The sky darkens. A distant rumble grows louder, then deafening.", color=Fore.RED)
+    print_slow("There's nowhere left to run. The vision was true.", color=Fore.RED)
+    print_slow("...", color=Fore.RED)
+    print_slow("The end.", color=Fore.RED)
+    input("\nPress Enter to continue...")
 
 def handle_jailed_ending():
-    print_slow("\n--- Ending Achieved: Jailed ---")
-    print_slow("The cold cell bars are your last sight. Your desperate warnings are met with mockery. You are trapped.")
-    print_slow("The distant, growing rumble is all the proof you needed. Your efforts end here, in despair.")
-    print_slow("...")
-    print_slow("The end.")
+    print_slow("\n--- Ending Achieved: Jailed ---", color=Fore.RED)
+    print_slow("The cold cell bars are your last sight. Your desperate warnings are met with mockery. You are trapped.", color=Fore.RED)
+    print_slow("The distant, growing rumble is all the proof you needed. Your efforts end here, in despair.", color=Fore.RED)
+    print_slow("...", color=Fore.RED)
+    print_slow("The end.", color=Fore.RED)
+    input("\nPress Enter to continue...")
 
 # New alternative buying logic for tech parts
 def buy_tech_parts_action():
     """Handle buying tech parts from the tech store."""
+    from utils import colorize_money, colorize_item, print_slow_colored
+    
     tech_parts_cost = 1 # One cash unit for tech parts
     if game_state["cash"] >= tech_parts_cost:
         game_state["cash"] -= tech_parts_cost
         game_state["tech_parts"] += 1
         game_state["inventory"].append("circuit board")
-        print_slow(f"You bought some **Tech Parts** for {tech_parts_cost} cash unit(s)!")
+        print_slow_colored(f"You bought some {colorize_item('**Tech Parts**')} for {colorize_money(f'{tech_parts_cost} cash unit(s)')}!", "success")
         advance_time(0.5)
     else:
-        print_slow(f"You don't have enough cash for tech parts. You have {game_state['cash']} cash unit(s), but need {tech_parts_cost}.")
+        cash_amount = f"{game_state['cash']} cash unit(s)"
+        cost_amount = f"{tech_parts_cost}"
+        print_slow_colored(f"You don't have enough cash for tech parts. You have {colorize_money(cash_amount)}, but need {colorize_money(cost_amount)}.", "warning")
         advance_time(0.1, silent=True)
 
 def handle_steal_school_action():
-    """Handles stealing from school with a 65% chance of failure (jail)."""
-    print_slow("You look for something valuable to steal at school...")
-    if random.random() < 0.65:
-        print_slow("You're caught by a teacher! The police are called. You are arrested.")
-        game_state["ending_achieved"] = "Jailed"
-    else:
-        print_slow("You manage to swipe a fancy calculator from the supply closet and slip away unnoticed.")
+    has_backpack = "backpack" in game_state["inventory"]
+    success_chance = 0.65 if has_backpack else 0.35
+    if random.random() < success_chance:
+        print_slow("You manage to swipe a calculator from a teacher's desk without being noticed." + (" Your backpack helps you hide it." if has_backpack else ""))
         game_state["inventory"].append("stolen_calculator")
+        print_slow("You gained a **Stolen Calculator**!")
+    else:
+        print_slow("You get caught trying to steal! The principal is called, and soon the police arrive.")
+        game_state["ending_achieved"] = "Jailed"
     advance_time(0.5)
 
 def handle_steal_tech_store_action():
-    """Handles stealing from tech store with a 65% chance of failure (jail)."""
-    print_slow("You try to pocket a tech part while the clerk isn't looking...")
-    if random.random() < 0.65:
-        print_slow("The alarm blares! Security grabs you before you can escape. You are arrested.")
-        game_state["ending_achieved"] = "Jailed"
-    else:
-        print_slow("You successfully steal a tech part and sneak out of the store.")
+    has_backpack = "backpack" in game_state["inventory"]
+    success_chance = 0.65 if has_backpack else 0.35
+    if random.random() < success_chance:
+        print_slow("You slip a tech part into your backpack and walk out, heart pounding." if has_backpack else "You manage to pocket a tech part and walk out, heart pounding.")
         game_state["inventory"].append("stolen_tech_part")
+        print_slow("You gained a **Stolen Tech Part**!")
+        # Convert stolen tech part to usable tech part
+        game_state["tech_parts"] += 1
+        game_state["inventory"].remove("stolen_tech_part")
+        print_slow("The stolen tech part is now usable for your technical needs.")
+    else:
+        print_slow("You get caught trying to steal! The store owner calls the police.")
+        game_state["ending_achieved"] = "Jailed"
     advance_time(0.5)
